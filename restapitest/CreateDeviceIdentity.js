@@ -28,24 +28,27 @@ console.log(token);
 
 var unirest = require('unirest');
 
-var data = JSON.stringify({deviceId: 'ngscSecondDevice'});
+var data = {deviceId: 'ngscThirdDevice'};
+var deviceProvisionUrl = 'https://IoTPOCGateway.azure-devices.net/devices/' + data.deviceId + '?api-version=2016-02-03';
+var requestBody = JSON.stringify(data);
 
-
-//Add "Second Device"
-unirest.put('https://IoTPOCGateway.azure-devices.net/devices/ngscSecondDevice?api-version=2016-02-03')
+//Add Device
+unirest.put(deviceProvisionUrl)
 .header('Content-Type','application/json')
 .header('Authorization', token)
-.send(data)
+.send(requestBody)
 .end(function (response) {
+  console.log(response.code);
+  console.log(response.headers);
   console.log(response.body);
 });
 
-//Get "Second Device" information (Device Id, Keys, Status... etc)
-unirest.get('https://IoTPOCGateway.azure-devices.net/devices/ngscSecondDevice?api-version=2016-02-03')
-.header('Content-Type','application/json')
-.header('Authorization', token)
-.end(function (response) {
-  console.log(response.body);
-});
+// Get device information (Device Id, Keys, Status... etc)
+// unirest.get(deviceProvisionUrl)
+// .header('Content-Type','application/json')
+// .header('Authorization', token)
+// .end(function (response) {
+  // console.log(response.body);
+// });
 
 
