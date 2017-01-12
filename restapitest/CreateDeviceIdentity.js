@@ -28,7 +28,7 @@ console.log(token);
 
 var unirest = require('unirest');
 
-var data = {deviceId: 'ngscThirdDevice'};
+var data = {deviceId: 'ngscNinthDevice'};
 var deviceProvisionUrl = 'https://IoTPOCGateway.azure-devices.net/devices/' + data.deviceId + '?api-version=2016-02-03';
 var requestBody = JSON.stringify(data);
 
