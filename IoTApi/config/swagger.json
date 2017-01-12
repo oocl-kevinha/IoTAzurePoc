@@ -1,0 +1,73 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "v1",
+        "title": "IoT API",
+        "description": "APIs for Azure IoT POC"
+    },
+    "paths": {
+        "/generateSasToken": {
+            "post": {
+                "tags": [
+                    "azure",
+                    "IoT"
+                ],
+                "operationId": "generateSasToken",
+                "consumes": [],
+                "produces": [
+                    "application/json",
+                    "text/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "SasRequest",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/SasRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/SasToken"
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
+        }
+    },
+    "definitions": {
+        "SasRequest": {
+            "type": "object",
+            "properties": {
+                "resourceUri": {
+                    "type": "string"
+                },
+                "signingKey": {
+                    "type": "string"
+                },
+                "policyName": {
+                    "type": "string"
+                },
+                "expiresInMins": {
+                    "format": "int32",
+                    "type": "integer"
+                }
+            }
+        },
+        "SasToken": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
