@@ -9,7 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "unirest": "^0.5.1",
-    "azure-event-hubs": "0.0.4"
+    "azure-event-hubs": "0.0.4",
+    "omit-empty": "^0.4.1",
+    "request": "^2.79.0",
+    "request-debug": "^0.2.0",
+    "request-promise": "^4.1.1",
+    "unirest": "^0.5.1"
   }
 }

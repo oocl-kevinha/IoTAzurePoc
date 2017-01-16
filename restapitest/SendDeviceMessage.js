@@ -1,7 +1,9 @@
  'use strict';
 
-var common = require('../common.js');
+var common = require('./common.js');
 var azureKeys = require('../azureKeys.js');
+var rp = require('request-promise');
+//rp.debug=true;
 
 var deviceId = "ngscSixthDevice"
 var resourceUri = "IoTPOCGateway.azure-devices.net/devices/" + deviceId;
@@ -15,43 +17,62 @@ var signingKey = azureKeys.deviceKeys[deviceId];
 var policyName = null;
 var expiresInMins = 15;
 
-var token = common.generateSasToken(resourceUri, signingKey, policyName, expiresInMins);
-// console.log(token);
+var response = common.generateSasToken(resourceUri, signingKey, policyName, expiresInMins);
+var token = null;
 
-var unirest = require('unirest');
+//token = response;
 
-setInterval(function(){
-     var windSpeed = 10 + (Math.random() * 4);
-     var data = JSON.stringify({ deviceId: deviceId, windSpeed: windSpeed });
-     
-     console.log("Sending message: " + data);
 
-     //Use DateTime as messageId...
-     var messageId = new Date().toISOString().replace(/T/, ' ').replace(/\../, '');
-     
-     //Simulate device message send using Rest API
-     unirest.post(eventsUri)
-        .header('Content-Type', 'application/json')
-        .header('Content-Encoding', 'UTF8')
-        .header('Authorization', token)
-        .header('IoTHub-MessageId', messageId)
-        .header('IoTHub-CorrelationId', 'TruckerApp_corelatedid')
-        .header('IoTHub-UserId', 'ngsc')
-        .header('IoTHub-app-GroupId', 'IoTPOC_group')
-        .header('IoTHub-app-CustomProp1', 'app_custom_property_value')
-        .header("IoTHub-app-Prop", "test")
-        .send(data)
-        .end(function (response) {
-         //show response code, headers and body
-          console.log(response.code);
-          console.log(response.headers);
-          console.log(response.body);
-          
-          console.log(response.request.headers);
-          console.log(response.request.body);
-    });
+response.bind(this).then(function(parsedBody){
+    console.log(parsedBody.token);
+    token = parsedBody.token;
+    
+    console.log("finished gen token...? " + token);
 
- }, 20000);
+    setInterval(function(){
+         var windSpeed = 10 + (Math.random() * 4);
+         var data = JSON.stringify({ deviceId: deviceId, windSpeed: windSpeed });
+         
+         console.log("Sending message: " + data);
+
+         // Use DateTime as messageId...
+         var messageId = new Date().toISOString().replace(/T/, ' ').replace(/\../, '');
+         
+         // Simulate device message send using Rest API
+         var options = {
+            method: 'POST',
+            uri: eventsUri,
+            body: data,
+            //json: true,
+            resolveWithFullResponse: true,
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Encoding': 'UTF8',
+                'Authorization': token,
+                
+                //below headers are redundant 
+                'IoTHub-MessageId': messageId,
+                'IoTHub-CorrelationId': 'TruckerApp_corelatedid',
+                'IoTHub-UserId': 'ngsc',
+                'IoTHub-app-GroupId': 'IoTPOC_group',
+                'IoTHub-app-CustomProp1': 'app_custom_property_value',
+                "IoTHub-app-Prop": "test",
+            }
+         };
+         
+         rp(options).then(function(response){
+            console.log("Finished sending event..." + messageId);
+            console.log(response.statusCode);
+            console.log(response.headers);
+            console.log(response.body);
+             
+         });
+         
+     }, 20000);
+})
+
+
+
 
 
 
