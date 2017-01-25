@@ -40,6 +40,40 @@
                 },
                 "deprecated": false
             }
+        },
+        "/IoTEvents/{deviceId}": {
+            "get": {
+                "tags": [
+                    "azure",
+                    "IoT"
+                ],
+                "operationId": "iotEvents",
+                "consumes": [],
+                "produces": [
+                    "application/json",
+                    "text/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/IoTEvent"
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
         }
     },
     "definitions": {
@@ -65,6 +99,36 @@
             "type": "object",
             "properties": {
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "IoTEvent": {
+            "type": "object",
+            "properties": {
+                "deviceId": {
+                    "type": "string"
+                },
+                "windSpeed": {
+                    "format": "double",
+                    "type": "number"
+                },
+                "EventProcessedUtcTime": {
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "IoTHub": {
+                    "$ref": "#/definitions/IoTHub"
+                }
+            }
+        },
+        "IoTHub": {
+            "type": "object",
+            "properties": {
+                "MessageId": {
+                    "type": "string"
+                },
+                "CorrelationId": {
                     "type": "string"
                 }
             }
