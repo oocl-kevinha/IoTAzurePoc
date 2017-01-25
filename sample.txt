@@ -1,0 +1,2 @@
+{ 'deviceId': 'ngscFirstNodeDevice', 'windSpeed': 11.234567 }
+{ 'deviceId': 'ngscSecondNodeDevice', 'windSpeed': 12.234567 }

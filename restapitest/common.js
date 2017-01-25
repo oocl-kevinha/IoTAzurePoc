@@ -10,14 +10,15 @@ var self = {
         var genSasUrl = "https://iotapiapp.azurewebsites.net/generateSasToken";
         //var genSasUrl = "http://ngsc-2-w7:8000/generateSasToken";
         
-        console.log(omitEmpty({ resourceUri: resourceUri, signingKey: signingKey, policyName: policyName, expiresInMins: expiresInMins }));
+        //console.log(omitEmpty({ resourceUri: resourceUri, signingKey: signingKey, policyName: policyName, expiresInMins: expiresInMins }));
         
         //var requestBody = JSON.stringify(omitEmpty({ resourceUri: resourceUri, signingKey: signingKey, policyName: policyName, expiresInMins: expiresInMins }));
         var requestBody = omitEmpty({ resourceUri: resourceUri, signingKey: signingKey, policyName: policyName, expiresInMins: expiresInMins });
         
         var token = null;
 	    
-        console.log("start");
+        console.log("construct request body for generateSasToken");
+        console.log(requestBody);
         
         var options = {
             method: 'POST',
@@ -35,8 +36,8 @@ var self = {
         
 	},
     
-    /* 
-	generateSasToken : function(resourceUri, signingKey, policyName, expiresInMins) {
+     
+	generateSasTokenLocal : function(resourceUri, signingKey, policyName, expiresInMins) {
 	    resourceUri = encodeURIComponent(resourceUri.toLowerCase()).toLowerCase();
 
 	    // Set expiration in seconds
@@ -54,7 +55,7 @@ var self = {
 	    + base64UriEncoded + "&se=" + expires;
 	    if (policyName) token += "&skn="+policyName;
 	    return token;
-	} */
+	} 
 }
 
 module.exports = self;
