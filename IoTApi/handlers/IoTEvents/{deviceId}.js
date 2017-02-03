@@ -1,57 +1,34 @@
 'use strict';
-var dataProvider = require('../../data/IoTEvents/{deviceId}.js');
 var common = require('../common.js');
+var config = require('../azureKeys.js');
 
 /**
  * Operations on /IoTEvents/{deviceId}
  */
 module.exports = {
-    /**
-     * summary: 
-     * description: 
-     * parameters: deviceId
-     * produces: application/json, text/json
-     * responses: 200
-     */
-    get: function iotEvents(req, res, next) {
-        /**
-         * Get the data for response 200
-         * For response `default` status 200 is used.
-         */
-        var status = 200;
-        var data = null;
-        console.log("req param = " + req.params['deviceId']);
-        var deviceId = req.params['deviceId'];
-        
-        common.getDatabase()
-            .then(() => common.getCollection())
-            .then(() => common.queryCollection(deviceId))
-            .then(() => {
-                console.log("common.data = " + common.data);
-                data = common.data;
-                res.status(status).send(data);
-            })
-            .catch((error) => { 
-                status = 500;
-                res.status(status).send(error);                
-            });
-        
-    }
-    
-    // get: function iotEvents(req, res, next) {
-        // /**
-         // * Get the data for response 200
-         // * For response `default` status 200 is used.
-         // */
-        // var status = 200;
-        // console.log("req param = " + req.params['deviceId']);
-        // var provider = dataProvider['get']['200'];
-        // provider(req, res, function (err, data) {
-            // if (err) {
-                // next(err);
-                // return;
-            // }
-            // res.status(status).send(data && data.responses);
-        // });
-    // }
+	/**
+	 * summary:
+	 * description:
+	 * parameters: deviceId
+	 * produces: application/json, text/json
+	 * responses: 200
+	 */
+	get: queryEventById
 };
+
+function queryEventById(req, res, next) {
+	console.log('req param = ' + req.params.deviceId);
+	var deviceId = req.params.deviceId;
+
+	common.queryCollection(config.collection.events, `SELECT * FROM ${config.collection.events} r WHERE r.deviceId = "${deviceId}" or r.device="${deviceId}"`)
+		.then((results) => {
+			// console.log("common.data = " + common.data);
+			console.log("common.data = " + results);
+			res.status(200).json(results);
+		})
+		.catch((error) => {
+			//status = 500;
+			console.log(error);
+			res.status(500).json(error);
+		});
+}

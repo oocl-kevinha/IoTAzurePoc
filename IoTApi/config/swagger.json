@@ -1,137 +1,251 @@
 {
-    "swagger": "2.0",
-    "info": {
-        "version": "v1",
-        "title": "IoT API",
-        "description": "APIs for Azure IoT POC"
-    },
-    "paths": {
-        "/generateSasToken": {
-            "post": {
-                "tags": [
-                    "azure",
-                    "IoT"
-                ],
-                "operationId": "generateSasToken",
-                "consumes": [],
-                "produces": [
-                    "application/json",
-                    "text/json"
-                ],
-                "parameters": [
-                    {
-                        "name": "SasRequest",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/SasRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/SasToken"
-                            }
-                        }
-                    }
-                },
-                "deprecated": false
-            }
-        },
-        "/IoTEvents/{deviceId}": {
-            "get": {
-                "tags": [
-                    "azure",
-                    "IoT"
-                ],
-                "operationId": "iotEvents",
-                "consumes": [],
-                "produces": [
-                    "application/json",
-                    "text/json"
-                ],
-                "parameters": [
-                    {
-                        "name": "deviceId",
-                        "in": "path",
-                        "type": "string",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/IoTEvent"
-                            }
-                        }
-                    }
-                },
-                "deprecated": false
-            }
-        }
-    },
-    "definitions": {
-        "SasRequest": {
-            "type": "object",
-            "properties": {
-                "resourceUri": {
-                    "type": "string"
-                },
-                "signingKey": {
-                    "type": "string"
-                },
-                "policyName": {
-                    "type": "string"
-                },
-                "expiresInMins": {
-                    "format": "int32",
-                    "type": "integer"
-                }
-            }
-        },
-        "SasToken": {
-            "type": "object",
-            "properties": {
-                "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "IoTEvent": {
-            "type": "object",
-            "properties": {
-                "deviceId": {
-                    "type": "string"
-                },
-                "windSpeed": {
-                    "format": "double",
-                    "type": "number"
-                },
-                "EventProcessedUtcTime": {
-                    "format": "date-time",
-                    "type": "string"
-                },
-                "IoTHub": {
-                    "$ref": "#/definitions/IoTHub"
-                }
-            }
-        },
-        "IoTHub": {
-            "type": "object",
-            "properties": {
-                "MessageId": {
-                    "type": "string"
-                },
-                "CorrelationId": {
-                    "type": "string"
-                }
-            }
-        }
-    }
+	"swagger": "2.0",
+	"info": {
+		"version": "v1",
+		"title": "IoT API",
+		"description": "APIs for Azure IoT POC"
+	},
+	"paths": {
+		"/generateSasToken": {
+			"post": {
+				"tags": [
+					"azure",
+					"IoT"
+				],
+				"operationId": "generateSasToken",
+				"consumes": [],
+				"produces": [
+					"application/json",
+					"text/json"
+				],
+				"parameters": [
+					{
+						"name": "SasRequest",
+						"in": "body",
+						"schema": {
+							"$ref": "#/definitions/SasRequest"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "array",
+							"items": {
+								"$ref": "#/definitions/SasToken"
+							}
+						}
+					}
+				},
+				"deprecated": false
+			}
+		},
+		"/IoTEvents/{deviceId}": {
+			"get": {
+				"tags": [
+					"azure",
+					"IoT"
+				],
+				"operationId": "iotEvents",
+				"consumes": [],
+				"produces": [
+					"application/json",
+					"text/json"
+				],
+				"parameters": [
+					{
+						"name": "deviceId",
+						"in": "path",
+						"description": "Id of the Device for retrieving the Events",
+						"required": true,
+						"type": "string"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "array",
+							"items": {
+								"$ref": "#/definitions/IoTEvent"
+							}
+						}
+					}
+				},
+				"deprecated": false
+			}
+		},
+		"/IoTDevices": {
+			"post": {
+				"tags": [
+					"azure",
+					"IoT"
+				],
+				"operationId": "registerIoTDevice",
+				"consumes": [
+					"application/json",
+					"text/json"
+				],
+				"produces": [
+					"application/json",
+					"text/json"
+				],
+				"parameters": [
+					{
+						"name": "IoTDevice",
+						"in": "body",
+						"required": true,
+						"schema": {
+							"$ref": "#/definitions/IoTDevice"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "array",
+							"items": {
+								"$ref": "#/definitions/IoTEvent"
+							}
+						}
+					}
+				},
+				"deprecated": false
+			}
+		},
+		"/IoTDevices/{deviceId}": {
+			"get": {
+				"tags": [
+					"azure",
+					"IoT"
+				],
+				"operationId": "getIoTDevice",
+				"consumes": [
+					"application/json",
+					"text/json"
+				],
+				"produces": [
+					"application/json",
+					"text/json"
+				],
+				"parameters": [
+					{
+						"name": "deviceId",
+						"in": "path",
+						"description": "Id of the Device",
+						"required": true,
+						"type": "string"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"$ref": "#/definitions/IoTDevice"
+						}
+					}
+				},
+				"deprecated": false
+			}
+		}
+	},
+	"definitions": {
+		"SasRequest": {
+			"type": "object",
+			"properties": {
+				"resourceUri": {
+					"type": "string"
+				},
+				"signingKey": {
+					"type": "string"
+				},
+				"policyName": {
+					"type": "string"
+				},
+				"expiresInMins": {
+					"format": "int32",
+					"type": "integer"
+				}
+			}
+		},
+		"SasToken": {
+			"type": "object",
+			"properties": {
+				"token": {
+					"type": "string"
+				}
+			}
+		},
+		"IoTDevice": {
+			"type": "object",
+			"required": ["deviceId", "status"],
+			"properties": {
+				"deviceId": {
+					"type": "string"
+				},
+				"status": {
+					"type": "string"
+				},
+				"statusReason": {
+					"type": "string"
+				},
+				"lastStatusUpdate": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"lastActivity": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"meta": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"key": {
+								"type": "string",
+								"description": "Name of the Meta Field"
+							},
+							"value": {
+								"type": "string",
+								"description": "Value of the Meta Field"
+							}
+						}
+					}
+				}
+			}
+		},
+		"IoTEvent": {
+			"type": "object",
+			"properties": {
+				"deviceId": {
+					"type": "string"
+				},
+				"windSpeed": {
+					"format": "double",
+					"type": "number"
+				},
+				"EventProcessedUtcTime": {
+					"format": "date-time",
+					"type": "string"
+				},
+				"IoTHub": {
+					"$ref": "#/definitions/IoTHub"
+				}
+			}
+		},
+		"IoTHub": {
+			"type": "object",
+			"properties": {
+				"MessageId": {
+					"type": "string"
+				},
+				"CorrelationId": {
+					"type": "string"
+				}
+			}
+		}
+	}
 }

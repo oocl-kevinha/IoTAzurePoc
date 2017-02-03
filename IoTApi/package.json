@@ -36,7 +36,8 @@
     "test": "tape 'tests/**/*.js'",
     "cover": "istanbul cover tape -- 'tests/**/*.js'",
     "lint": "eslint .",
-    "regenerate": "yo swaggerize:test --framework express --apiPath './config/swagger.json'"
+    "regenerate": "yo swaggerize:test --framework express --apiPath './config/swagger.json'",
+	"regenerate-handler": "yo swaggerize:handler --skip-npm-install --framework express --apiPath './config/swagger.json'"
   },
   "generator-swaggerize": {
     "version": "3.1.0"
