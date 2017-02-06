@@ -1,4 +1,5 @@
 'use strict';
+var config = require('./azureKeys');
 var common = require('./common.js');
 var crypto = require('crypto');
 /**
@@ -17,15 +18,11 @@ module.exports = {
 
 function generateSasToken(req, res, next) {
 	var SasRequest = req.body;
-	var resourceUri = SasRequest.resourceUri;
-	var signingKey = SasRequest.signingKey;
+	var resourceUri = SasRequestg.resourceUri;
+	var signingKey = config.iothub_registryReadWrite_key;
 	var policyName = SasRequest.policyName;
 	var expiresInMins = SasRequest.expiresInMins;
 
 	var token = common.generateSasToken(resourceUri, signingKey, policyName, expiresInMins);
-	console.log("token generated: " + token);
-
-	var SasToken = { "token": token };
-
-	res.status(200).send(SasToken);
+	res.status(200).json({token: token});
 }

@@ -20,6 +20,7 @@ module.exports = {
 	, queryCollection: queryCollection
 	, insertDocument: insertDocument
 	, buildCollectionUrl: buildCollectionUrl
+	, http: require('../util/http-manager')
 };
 
 function initializeDB() {
@@ -35,7 +36,7 @@ function buildCollectionUrl(collectionName) {
 }
 
 function generateSasToken(resourceUri, signingKey, policyName, expiresInMins) {
-	resourceUri = encodeURIComponent(resourceUri.toLowerCase()).toLowerCase();
+	resourceUri = encodeURIComponent(resourceUri);
 
 	// Set expiration in seconds
 	var expires = Math.ceil((Date.now() / 1000) + expiresInMins * 60);
@@ -117,12 +118,6 @@ function queryCollection(collectionName, query) {
 			if (err) {
 				return reject(err);
 			}
-			//for (var queryResult of results) {
-				//var resultString = ;
-			//	console.log('\tQuery returned %s', JSON.stringify(queryResult));
-				//queryData.push(resultString);
-			//}
-			//console.log();
 			resolve(results);
 		});
 	});
@@ -135,7 +130,6 @@ function insertDocument(collectionName, document) {
 			if (err) {
 				return reject(err);
 			}
-			console.log('doc inserted: ' + doc);
 			resolve(doc);
 		});
 	});

@@ -18,6 +18,7 @@
     "documentdb": "^1.10.1",
     "express": "^4.0.0",
     "jsonpath": "^0.2.9",
+    "lodash": "^4.17.4",
     "swaggerize-express": "^4.0.0",
     "swaggerize-ui": "^1.0.1",
     "swagmock": "~0.0.2",
@@ -37,7 +38,7 @@
     "cover": "istanbul cover tape -- 'tests/**/*.js'",
     "lint": "eslint .",
     "regenerate": "yo swaggerize:test --framework express --apiPath './config/swagger.json'",
-	"regenerate-handler": "yo swaggerize:handler --skip-npm-install --framework express --apiPath './config/swagger.json'"
+    "regenerate-handler": "yo swaggerize:handler --skip-npm-install --framework express --apiPath './config/swagger.json'"
   },
   "generator-swaggerize": {
     "version": "3.1.0"

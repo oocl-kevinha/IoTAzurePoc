@@ -5,9 +5,18 @@
 		"title": "IoT API",
 		"description": "APIs for Azure IoT POC"
 	},
+	"securityDefinitions": {
+		"Authorization": {
+			"type": "apiKey",
+			"name": "Authorization",
+			"in": "header",
+			"description": "SAS Token"
+		}
+	},
 	"paths": {
 		"/generateSasToken": {
 			"post": {
+				"description": "Generate SAS Token as Authorization for other APIs",
 				"tags": [
 					"azure",
 					"IoT"
@@ -31,10 +40,7 @@
 					"200": {
 						"description": "OK",
 						"schema": {
-							"type": "array",
-							"items": {
-								"$ref": "#/definitions/SasToken"
-							}
+							"$ref": "#/definitions/SasToken"
 						}
 					}
 				},
@@ -43,11 +49,12 @@
 		},
 		"/IoTEvents/{deviceId}": {
 			"get": {
+				"description": "Retrieve device's events with the deviceId",
 				"tags": [
 					"azure",
 					"IoT"
 				],
-				"operationId": "iotEvents",
+				"operationId": "getIoTEvents",
 				"consumes": [],
 				"produces": [
 					"application/json",
@@ -68,7 +75,7 @@
 						"schema": {
 							"type": "array",
 							"items": {
-								"$ref": "#/definitions/IoTEvent"
+								"$ref": "#/definitions/GPSEvent"
 							}
 						}
 					}
@@ -78,6 +85,7 @@
 		},
 		"/IoTDevices": {
 			"post": {
+				"description": "Register the device to IoTHub and record custom meta data in DocumentDB",
 				"tags": [
 					"azure",
 					"IoT"
@@ -117,6 +125,7 @@
 		},
 		"/IoTDevices/{deviceId}": {
 			"get": {
+				"description": "Retrieve device's information with the deviceId",
 				"tags": [
 					"azure",
 					"IoT"
@@ -166,7 +175,8 @@
 				},
 				"expiresInMins": {
 					"format": "int32",
-					"type": "integer"
+					"type": "integer",
+					"default": 15
 				}
 			}
 		},
@@ -180,9 +190,18 @@
 		},
 		"IoTDevice": {
 			"type": "object",
-			"required": ["deviceId", "status"],
+			"required": ["deviceUUID", "deviceOSType", "deviceOSVersion", "deviceModel"],
 			"properties": {
-				"deviceId": {
+				"deviceUUID": {
+					"type": "string"
+				},
+				"deviceOSType": {
+					"type": "string"
+				},
+				"deviceOSVersion": {
+					"type": "string"
+				},
+				"deviceModel": {
 					"type": "string"
 				},
 				"status": {
@@ -214,6 +233,71 @@
 							}
 						}
 					}
+				}
+			}
+		},
+		"GPSEvent": {
+			"type": "object",
+			"properties": {
+				"routeID": {
+					"type": "string"
+				},
+				"routeFlag": {
+					"type": "string"
+				},
+				"longitude": {
+					"format": "double",
+					"type": "number"
+				},
+				"latitude": {
+					"format": "double",
+					"type": "number"
+				},
+				"altitude": {
+					"format": "double",
+					"type": "number"
+				},
+				"hAccuracy": {
+					"format": "double",
+					"type": "number"
+				},
+				"vAccuracy": {
+					"format": "double",
+					"type": "number"
+				},
+				"speed": {
+					"format": "double",
+					"type": "number"
+				},
+				"angle": {
+					"format": "double",
+					"type": "number"
+				},
+				"distance": {
+					"format": "double",
+					"type": "number"
+				},
+				"cordinateSystem": {
+					"type": "string"
+				},
+				"timeStamp": {
+					"format": "date-time",
+					"type": "string"
+				},
+				"timezone": {
+					"type": "string"
+				},
+				"devicePower": {
+					"format": "double",
+					"type": "number"
+				},
+				"intervalTime": {
+					"format": "int32",
+					"type": "number"
+				},
+				"intervalDistance": {
+					"format": "double",
+					"type": "number"
 				}
 			}
 		},
