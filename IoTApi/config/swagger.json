@@ -18,8 +18,7 @@
 			"post": {
 				"description": "Generate SAS Token as Authorization for other APIs",
 				"tags": [
-					"azure",
-					"IoT"
+					"Token"
 				],
 				"operationId": "generateSasToken",
 				"consumes": [],
@@ -51,8 +50,7 @@
 			"get": {
 				"description": "Retrieve device's events with the deviceId",
 				"tags": [
-					"azure",
-					"IoT"
+					"Events"
 				],
 				"operationId": "getIoTEvents",
 				"consumes": [],
@@ -87,8 +85,7 @@
 			"post": {
 				"description": "Register the device to IoTHub and record custom meta data in DocumentDB",
 				"tags": [
-					"azure",
-					"IoT"
+					"Devices"
 				],
 				"operationId": "registerIoTDevice",
 				"consumes": [
@@ -127,8 +124,7 @@
 			"get": {
 				"description": "Retrieve device's information with the deviceId",
 				"tags": [
-					"azure",
-					"IoT"
+					"Devices"
 				],
 				"operationId": "getIoTDevice",
 				"consumes": [

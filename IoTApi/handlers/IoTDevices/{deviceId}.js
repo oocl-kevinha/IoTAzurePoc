@@ -26,7 +26,7 @@ function getIoTDevice(req, res, next) {
 		if(!response || !(response.statusCode >= 200 && response.statusCode < 300 || response.statusCode === 304 || response.statusCode === 1223)) {
 			return res.status(response? response.statusCode: 500).json(err || data);
 		}
-		common.queryCollection(config.collection.devices, `SELECT TOP 1 d.deviceUUID, d.deviceOSType, d.deviceOSVersion, d.deviceModel, d.status, d.statusReason, d.lastStatusUpdate, d.lastActivity, d.meta FROM ${config.collection.devices} d WHERE d.deviceId = "${deviceId}"`)
+		common.queryCollection(config.collection.devices, `SELECT TOP 1 d.deviceUUID, d.deviceOSType, d.deviceOSVersion, d.deviceModel, d.status, d.statusReason, d.lastStatusUpdate, d.lastActivity, d.meta FROM ${config.collection.devices} d WHERE d.deviceUUID = "${deviceId}"`)
 			.then((results) => {
 				res.status(200).json(results.length > 0? _.merge(data, results[0]): {});
 			})
