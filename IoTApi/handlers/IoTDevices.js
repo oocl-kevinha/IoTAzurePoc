@@ -24,6 +24,9 @@ function registerIoTDevice(req, res) {
 		if (err) {
 			return res.status(500).json(err);
 		}
+		if(!response || !(response.statusCode >= 200 && response.statusCode < 300 || response.statusCode === 304 || response.statusCode === 1223)) {
+			return res.status(response? response.statusCode: 500).json(err || data);
+		}
 
 		common.insertDocument(config.collection.devices, req.body)
 			.then((insertedDoc) => {

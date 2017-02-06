@@ -18,7 +18,7 @@ module.exports = {
 
 function generateSasToken(req, res, next) {
 	var SasRequest = req.body;
-	var resourceUri = SasRequestg.resourceUri;
+	var resourceUri = SasRequest.resourceUri;
 	var signingKey = config.iothub_registryReadWrite_key;
 	var policyName = SasRequest.policyName;
 	var expiresInMins = SasRequest.expiresInMins;

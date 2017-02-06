@@ -3,17 +3,17 @@ var url = require('url');
 var http = require('https');
 
 module.exports = {
-	get: function(header, url, parseResponse) {
-		return sendJSONRequest(header, url, 'get', undefined, parseResponse);
+	get: function(header, url, parseResponse, callback) {
+		return sendJSONRequest(header, url, 'get', undefined, parseResponse, callback);
 	}
-	, post: function(header, url, data, parseResponse) {
-		return sendJSONRequest(header, url, 'post', data, parseResponse);
+	, post: function(header, url, data, parseResponse, callback) {
+		return sendJSONRequest(header, url, 'post', data, parseResponse, callback);
 	}
 	, put: function(header, url, data, parseResponse, callback) {
 		return sendJSONRequest(header, url, 'put', data, parseResponse, callback);
 	}
-	, delete: function(header, url, parseResponse) {
-		return sendJSONRequest(header, url, 'delete', undefined, parseResponse);
+	, delete: function(header, url, parseResponse, callback) {
+		return sendJSONRequest(header, url, 'delete', undefined, parseResponse, callback);
 	}
 };
 
