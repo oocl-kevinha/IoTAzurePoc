@@ -102,7 +102,7 @@
 						"in": "body",
 						"required": true,
 						"schema": {
-							"$ref": "#/definitions/IoTDevice"
+							"$ref": "#/definitions/IoTDeviceCreation"
 						}
 					}
 				],
@@ -112,7 +112,7 @@
 						"schema": {
 							"type": "array",
 							"items": {
-								"$ref": "#/definitions/IoTEvent"
+								"$ref": "#/definitions/IoTDevice"
 							}
 						}
 					}
@@ -186,9 +186,8 @@
 		},
 		"IoTDevice": {
 			"type": "object",
-			"required": ["deviceUUID", "deviceOSType", "deviceOSVersion", "deviceModel"],
 			"properties": {
-				"deviceUUID": {
+				"deviceId": {
 					"type": "string"
 				},
 				"deviceOSType": {
@@ -200,17 +199,112 @@
 				"deviceModel": {
 					"type": "string"
 				},
+				"generationId": {
+					"type": "string"
+				},
+				"etag": {
+					"type": "string"
+				},
+				"connectionState": {
+					"type": "string"
+				},
 				"status": {
 					"type": "string"
 				},
 				"statusReason": {
 					"type": "string"
 				},
-				"lastStatusUpdate": {
+				"statusUpdateTime": {
 					"type": "string",
 					"format": "date-time"
 				},
-				"lastActivity": {
+				"lastActivityTime": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"authentication": {
+					"type": "object",
+					"properties": {
+						"symmetricKey": {
+							"type": "object",
+							"properties": {
+								"primaryKey": {
+									"type": "string"
+								},
+								"secondaryKey": {
+									"type": "string"
+								}
+							}
+						},
+						"x509Thumbprint": {
+							"type": "object",
+							"properties": {
+								"primaryThumbprint": {
+									"type": "string"
+								},
+								"secondaryThumbprint": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				},
+				"meta": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"key": {
+								"type": "string",
+								"description": "Name of the Meta Field"
+							},
+							"value": {
+								"type": "string",
+								"description": "Value of the Meta Field"
+							}
+						}
+					}
+				}
+			}
+		},
+		"IoTDeviceCreation": {
+			"type": "object",
+			"required": ["deviceId", "deviceOSType", "deviceOSVersion", "deviceModel"],
+			"properties": {
+				"deviceId": {
+					"type": "string"
+				},
+				"deviceOSType": {
+					"type": "string"
+				},
+				"deviceOSVersion": {
+					"type": "string"
+				},
+				"deviceModel": {
+					"type": "string"
+				},
+				"connectionState": {
+					"type": "string",
+					"enum": ["connected", "disconnected"],
+					"default": "connected"
+				},
+				"status": {
+					"type": "string",
+					"enum": ["enabled", "disabled"],
+					"default": "enabled"
+				},
+				"statusReason": {
+					"type": "string"
+				},
+				"connectionStateUpdatedTime": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"statusUpdatedTime": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"lastActivityTime": {
 					"type": "string",
 					"format": "date-time"
 				},
