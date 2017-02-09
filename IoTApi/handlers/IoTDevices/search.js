@@ -28,8 +28,7 @@ function searchIoTDevice(req, res, next) {
 		query: `SELECT d.deviceId, d.deviceOSType, d.deviceOSVersion, d.deviceModel, d.meta FROM ${config.collection.devices} d JOIN m IN d.meta WHERE ` + _.join(whereCondition, ' OR ')
 		, parameters: param
 	};
-	//return res.status(200).json(querySpec);
-console.log(querySpec);
+
 	common.queryCollection(config.collection.devices, querySpec)
 		.then((results) => {
 			async.concat(
