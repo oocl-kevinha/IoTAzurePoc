@@ -35,7 +35,6 @@ console.log(querySpec);
 			async.concat(
 				results
 				, function(result, callback) {
-					console.log(result);
 					deviceEndpoint.retrieveIoTDeviceOnHubById(result.deviceId, req.headers.authorization, function(err, data, response) {
 						if (err) {
 							return callback(err);
@@ -51,7 +50,6 @@ console.log(querySpec);
 						console.log(err);
 						return res.status(500).json(err);
 					}
-					console.log(mergedDocs);
 					res.status(200).json(_.compact(mergedDocs));
 				}
 			);
