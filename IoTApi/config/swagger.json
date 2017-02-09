@@ -110,6 +110,42 @@
 					"200": {
 						"description": "OK",
 						"schema": {
+							"$ref": "#/definitions/IoTDevice"
+						}
+					}
+				},
+				"deprecated": false
+			}
+		},
+		"/IoTDevices/search": {
+			"post": {
+				"description": "Search IoT Devices with meta data key/values",
+				"tags": [
+					"Devices"
+				],
+				"operationId": "searchIoTDevice",
+				"consumes": [
+					"application/json",
+					"text/json"
+				],
+				"produces": [
+					"application/json",
+					"text/json"
+				],
+				"parameters": [
+					{
+						"name": "searchCondition",
+						"in": "body",
+						"required": true,
+						"schema": {
+							"$ref": "#/definitions/IoTDeviceSearchCondition"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
 							"type": "array",
 							"items": {
 								"$ref": "#/definitions/IoTDevice"
@@ -263,6 +299,23 @@
 								"description": "Value of the Meta Field"
 							}
 						}
+					}
+				}
+			}
+		},
+		"IoTDeviceSearchCondition": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["key", "value"],
+				"properties": {
+					"key": {
+						"type": "string",
+						"description": "Name of the Meta Field"
+					},
+					"value": {
+						"type": "string",
+						"description": "Value of the Meta Field"
 					}
 				}
 			}

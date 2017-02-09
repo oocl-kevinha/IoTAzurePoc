@@ -2,6 +2,7 @@
 var _ = require('lodash');
 var common = require('./common.js');
 var config = require('./azureKeys.js');
+var deviceEndpoint = require('../common/device');
 /**
  * Operations on /IoTDevices
  */
@@ -21,7 +22,7 @@ function registerIoTDevice(req, res) {
 
 	// 1. Create Device on IoTHub
 	// 2. Insert Device into own DB (since some field are not support in IoTHub
-	createIoTDeviceOnHub(req.body, req.headers.authorization, function(err, data, response) {
+	deviceEbndpoint.createIoTDeviceOnHub(req.body, req.headers.authorization, function(err, data, response) {
 		if (err) {
 			return res.status(500).json(err);
 		}
@@ -29,7 +30,15 @@ function registerIoTDevice(req, res) {
 			return res.status(response? response.statusCode: 500).json(err || data);
 		}
 
-		common.insertDocument(config.collection.devices, req.body)
+		var deviceObj = {
+			deviceId: req.body.deviceId
+			, deviceOSType: req.body.deviceOSType
+			, deviceOSVersion: req.body.deviceOSVersion
+			, deviceModel: req.body.deviceModel
+			, meta: req.body.meta
+		};
+
+		common.insertDocument(config.collection.devices, deviceObj)
 			.then((insertedDoc) => {
 				console.log('common.data = ' + insertedDoc);
 				//res.status(200).json(insertedDoc);
@@ -42,21 +51,21 @@ function registerIoTDevice(req, res) {
 			});
 	});
 }
-
-function createIoTDeviceOnHub(device, sasToken, callback) {
-	common.http.put(
-		{ Authorization: sasToken }
-		, `https://IoTPOCGateway.azure-devices.net/devices/${device.deviceId}?api-version=2016-11-14`
-		, {
-			deviceId: device.deviceId
-			, connectionState: device.connectionState
-			, status: device.status
-			, statusReason: device.statusReason
-			, connectionStateUpdatedTime: device.connectionStateUpdatedTime
-			, statusUpdatedTime: device.statusUpdatedTime
-			, lastActivityTime: device.lastActivityTime
-		}
-		, true
-		, callback
-	);
-}
+//
+// function createIoTDeviceOnHub(device, sasToken, callback) {
+// 	common.http.put(
+// 		{ Authorization: sasToken }
+// 		, `https://IoTPOCGateway.azure-devices.net/devices/${device.deviceId}?api-version=2016-11-14`
+// 		, {
+// 			deviceId: device.deviceId
+// 			, connectionState: device.connectionState
+// 			, status: device.status
+// 			, statusReason: device.statusReason
+// 			, connectionStateUpdatedTime: device.connectionStateUpdatedTime
+// 			, statusUpdatedTime: device.statusUpdatedTime
+// 			, lastActivityTime: device.lastActivityTime
+// 		}
+// 		, true
+// 		, callback
+// 	);
+// }
