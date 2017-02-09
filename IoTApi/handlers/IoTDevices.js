@@ -22,7 +22,7 @@ function registerIoTDevice(req, res) {
 
 	// 1. Create Device on IoTHub
 	// 2. Insert Device into own DB (since some field are not support in IoTHub
-	deviceEbndpoint.createIoTDeviceOnHub(req.body, req.headers.authorization, function(err, data, response) {
+	deviceEndpoint.createIoTDeviceOnHub(req.body, req.headers.authorization, function(err, data, response) {
 		if (err) {
 			return res.status(500).json(err);
 		}

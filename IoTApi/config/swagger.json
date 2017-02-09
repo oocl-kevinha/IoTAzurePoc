@@ -322,7 +322,7 @@
 		},
 		"IoTDeviceCreation": {
 			"type": "object",
-			"required": ["deviceId", "deviceOSType", "deviceOSVersion", "deviceModel"],
+			"required": ["deviceId"],
 			"properties": {
 				"deviceId": {
 					"type": "string"
