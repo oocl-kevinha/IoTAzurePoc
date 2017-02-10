@@ -115,6 +115,40 @@
 					}
 				},
 				"deprecated": false
+			},
+			"put": {
+				"description": "Update the device custom meta data",
+				"tags": [
+					"Devices"
+				],
+				"operationId": "registerIoTDevice",
+				"consumes": [
+					"application/json",
+					"text/json"
+				],
+				"produces": [
+					"application/json",
+					"text/json"
+				],
+				"parameters": [
+					{
+						"name": "IoTDevice",
+						"in": "body",
+						"required": true,
+						"schema": {
+							"$ref": "#/definitions/IoTDeviceUpdate"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"$ref": "#/definitions/IoTDevice"
+						}
+					}
+				},
+				"deprecated": false
 			}
 		},
 		"/IoTDevices/search": {
@@ -322,10 +356,10 @@
 		},
 		"IoTDeviceCreation": {
 			"type": "object",
-			"required": ["deviceId"],
 			"properties": {
 				"deviceId": {
-					"type": "string"
+					"type": "string",
+					"description": "Device Id will be auto-generated if this field is empty"
 				},
 				"deviceOSType": {
 					"type": "string"
@@ -360,6 +394,80 @@
 				"lastActivityTime": {
 					"type": "string",
 					"format": "date-time"
+				},
+				"meta": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"key": {
+								"type": "string",
+								"description": "Name of the Meta Field"
+							},
+							"value": {
+								"type": "string",
+								"description": "Value of the Meta Field"
+							}
+						}
+					}
+				}
+			}
+		},
+		"IoTDeviceUpdate": {
+			"type": "object",
+			"properties": {
+				"deviceId": {
+					"type": "string",
+					"description": "Device Id will be auto-generated if this field is empty"
+				},
+				"deviceOSType": {
+					"type": "string"
+				},
+				"deviceOSVersion": {
+					"type": "string"
+				},
+				"deviceModel": {
+					"type": "string"
+				},
+				"meta": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"key": {
+								"type": "string",
+								"description": "Name of the Meta Field"
+							},
+							"value": {
+								"type": "string",
+								"description": "Value of the Meta Field"
+							}
+						}
+					}
+				}
+			}
+		},
+		"VendorIoTDevice": {
+			"type": "object",
+			"properties": {
+				"deviceId": {
+					"type": "string"
+				},
+				"etag": {
+					"type": "string"
+				},
+				"lastUpdated": {
+					"format": "date-time",
+					"type": "string"
+				},
+				"deviceOSType": {
+					"type": "string"
+				},
+				"deviceOSVersion": {
+					"type": "string"
+				},
+				"deviceModel": {
+					"type": "string"
 				},
 				"meta": {
 					"type": "array",
