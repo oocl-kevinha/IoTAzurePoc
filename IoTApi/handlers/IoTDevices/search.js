@@ -25,7 +25,7 @@ function searchIoTDevice(req, res, next) {
 		}
 	);
 	var querySpec = {
-		query: `SELECT d.deviceId, d.deviceOSType, d.deviceOSVersion, d.deviceModel, d.meta FROM ${config.collection.devices} d JOIN m IN d.meta WHERE ` + _.join(whereCondition, ' OR ')
+		query: `SELECT d.deviceId, d.deviceOSType, d.deviceOSVersion, d.deviceModel, d.meta FROM ${config.collection.devices} d` + (whereCondition.length > 0? ' JOIN m IN d.meta WHERE ' + _.join(whereCondition, ' OR '): '')
 		, parameters: param
 	};
 
@@ -41,7 +41,7 @@ function searchIoTDevice(req, res, next) {
 						if(!response || !(response.statusCode >= 200 && response.statusCode < 300 || response.statusCode === 304 || response.statusCode === 1223)) {
 							return callback(response? `Invalid Status Code [${response.statusCode}] from IoTHub`: 'No response');
 						}
-						callback(undefined, _.merge(result, data));
+						callback(undefined, _.merge(result, req.query.showKeys? data: _.omit(data, 'authentication')));
 					});
 				}
 				, function(err, mergedDocs) {

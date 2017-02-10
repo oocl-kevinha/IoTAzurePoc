@@ -170,10 +170,15 @@
 					{
 						"name": "searchCondition",
 						"in": "body",
-						"required": true,
 						"schema": {
 							"$ref": "#/definitions/IoTDeviceSearchCondition"
 						}
+					},
+					{
+						"name": "showKeys",
+						"in": "query",
+						"type": "boolean",
+						"default": false
 					}
 				],
 				"responses": {
