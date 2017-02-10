@@ -19,6 +19,7 @@ module.exports = {
 	, getCollection: getCollection
 	, queryCollection: queryCollection
 	, insertDocument: insertDocument
+	, updateDocument: updateDocument
 	, buildCollectionUrl: buildCollectionUrl
 	, http: require('../util/http-manager')
 };
@@ -107,7 +108,7 @@ function getCollection(collectionName) {
 /**
  * Query the collection using SQL
  */
-function queryCollection(collectionName, query) {
+function queryCollection(collectionName, query, callback) {
 	console.log('Querying collection through:\n%s', query);
 	//var queryData = [];
 	return new Promise((resolve, reject) => {
@@ -115,6 +116,9 @@ function queryCollection(collectionName, query) {
 			buildCollectionUrl(collectionName),
 			query
 		).toArray((err, results) => {
+			if (callback) {
+				callback(err, results);
+			}
 			if (err) {
 				return reject(err);
 			}
@@ -123,10 +127,28 @@ function queryCollection(collectionName, query) {
 	});
 }
 
-function insertDocument(collectionName, document) {
+function insertDocument(collectionName, document, callback) {
 	console.log(`insert into ${collectionName}`);
 	return new Promise((resolve, reject) => {
 		client.createDocument(buildCollectionUrl(collectionName), document, function(err, doc) {
+			if (callback) {
+				callback(err, doc);
+			}
+			if (err) {
+				return reject(err);
+			}
+			resolve(doc);
+		});
+	});
+}
+
+function updateDocument(document, callback) {
+	//console.log(`update into ${collectionName}`);
+	return new Promise((resolve, reject) => {
+		client.replaceDocument(document._self, document, function(err, doc) {
+			if (callback) {
+				callback(err, doc);
+			}
 			if (err) {
 				return reject(err);
 			}
