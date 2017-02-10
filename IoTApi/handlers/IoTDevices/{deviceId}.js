@@ -3,18 +3,9 @@ var _ = require('lodash');
 var config = require('../azureKeys.js');
 var common = require('../common.js');
 var deviceEndpoint = require('../../common/device');
-/**
- * Operations on /IoTDevices/{deviceId}
- */
+
 module.exports = {
-    /**
-     * summary:
-     * description:
-     * parameters: deviceId
-     * produces: application/json, text/json
-     * responses: 200
-     */
-    get: getIoTDevice
+	get: getIoTDevice
 };
 
 function getIoTDevice(req, res, next) {
@@ -28,7 +19,7 @@ function getIoTDevice(req, res, next) {
 			return res.status(response? response.statusCode: 500).json(err || data);
 		}
 		var querySpec = {
-			query: `SELECT TOP 1 d.deviceId, d.deviceOSType, d.deviceOSVersion, d.deviceModel, d.meta FROM ${config.collection.devices} d WHERE d.deviceId = @deviceId`
+			query: `SELECT TOP 1 d.deviceId, d.meta FROM ${config.collection.devices} d WHERE d.deviceId = @deviceId`
 			, parameters: [
 				{ name: '@deviceId', value: deviceId }
 			]
@@ -43,12 +34,3 @@ function getIoTDevice(req, res, next) {
 			});
 	});
 }
-
-// function retrieveIoTDeviceOnHubById(deviceId, sasToken, callback) {
-// 	common.http.get(
-// 		{ Authorization: sasToken }
-// 		, `https://IoTPOCGateway.azure-devices.net/devices/${deviceId}?api-version=2016-11-14`
-// 		, true
-// 		, callback
-// 	);
-// }

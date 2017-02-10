@@ -5,23 +5,13 @@ var uuid = require('uuid');
 var common = require('./common.js');
 var config = require('./azureKeys.js');
 var deviceEndpoint = require('../common/device');
-/**
- * Operations on /IoTDevices
- */
+
 module.exports = {
-    /**
-     * summary:
-     * description:
-     * parameters: IoTDevice
-     * produces: application/json, text/json
-     * responses: 200
-     */
-    post: registerIoTDevice
+	post: registerIoTDevice
 	, put: updateIoTDevice
 };
 
 function registerIoTDevice(req, res) {
-	console.log('Enter Iot Device: ' + JSON.stringify(req.body));
 	req.body.deviceId = req.body.deviceId || uuid.v4().toString();
 
 	// 1. Create Device on IoTHub
@@ -36,20 +26,14 @@ function registerIoTDevice(req, res) {
 
 		var deviceObj = {
 			deviceId: req.body.deviceId
-			, deviceOSType: req.body.deviceOSType
-			, deviceOSVersion: req.body.deviceOSVersion
-			, deviceModel: req.body.deviceModel
 			, meta: req.body.meta
 		};
 
 		common.insertDocument(config.collection.devices, deviceObj)
 			.then((insertedDoc) => {
-				console.log('common.data = ' + insertedDoc);
-				//res.status(200).json(insertedDoc);
 				res.status(200).json(_.merge(data, req.body));
 			})
 			.catch((error) => {
-				//status = 500;
 				console.log(error);
 				res.status(500).json(error);
 			});
@@ -57,8 +41,6 @@ function registerIoTDevice(req, res) {
 }
 
 function updateIoTDevice(req, res) {
-	console.log('Enter Iot Device: ' + JSON.stringify(req.body));
-
 	var querySpec = {
 		query: `SELECT TOP 1 * FROM ${config.collection.devices} d WHERE d.deviceId = @deviceId`
 		, parameters: [
@@ -74,9 +56,6 @@ function updateIoTDevice(req, res) {
 			, function(results, callback) {
 				if (results.length > 0) {
 					var deviceDoc = results[0];
-					deviceDoc.deviceOSType = req.body.deviceOSType;
-					deviceDoc.deviceOSVersion = req.body.deviceOSVersion;
-					deviceDoc.deviceModel = req.body.deviceModel;
 					deviceDoc.meta = req.body.meta;
 					callback(undefined, deviceDoc);
 				} else {
@@ -89,9 +68,6 @@ function updateIoTDevice(req, res) {
 			, function(updatedDeviceDoc, callback) {
 				var deviceObj = {
 					deviceId: updatedDeviceDoc.deviceId
-					, deviceOSType: updatedDeviceDoc.deviceOSType
-					, deviceOSVersion: updatedDeviceDoc.deviceOSVersion
-					, deviceModel: updatedDeviceDoc.deviceModel
 					, meta: updatedDeviceDoc.meta
 				};
 				deviceEndpoint.retrieveIoTDeviceOnHubById(req.body.deviceId, req.headers.authorization, function(err, data, response) {
@@ -120,21 +96,3 @@ function updateIoTDevice(req, res) {
 		}
 	);
 }
-//
-// function createIoTDeviceOnHub(device, sasToken, callback) {
-// 	common.http.put(
-// 		{ Authorization: sasToken }
-// 		, `https://IoTPOCGateway.azure-devices.net/devices/${device.deviceId}?api-version=2016-11-14`
-// 		, {
-// 			deviceId: device.deviceId
-// 			, connectionState: device.connectionState
-// 			, status: device.status
-// 			, statusReason: device.statusReason
-// 			, connectionStateUpdatedTime: device.connectionStateUpdatedTime
-// 			, statusUpdatedTime: device.statusUpdatedTime
-// 			, lastActivityTime: device.lastActivityTime
-// 		}
-// 		, true
-// 		, callback
-// 	);
-// }
