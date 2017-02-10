@@ -265,15 +265,6 @@
 				"deviceId": {
 					"type": "string"
 				},
-				"deviceOSType": {
-					"type": "string"
-				},
-				"deviceOSVersion": {
-					"type": "string"
-				},
-				"deviceModel": {
-					"type": "string"
-				},
 				"generationId": {
 					"type": "string"
 				},
@@ -366,15 +357,6 @@
 					"type": "string",
 					"description": "Device Id will be auto-generated if this field is empty"
 				},
-				"deviceOSType": {
-					"type": "string"
-				},
-				"deviceOSVersion": {
-					"type": "string"
-				},
-				"deviceModel": {
-					"type": "string"
-				},
 				"connectionState": {
 					"type": "string",
 					"enum": ["connected", "disconnected"],
@@ -425,15 +407,6 @@
 					"type": "string",
 					"description": "Device Id will be auto-generated if this field is empty"
 				},
-				"deviceOSType": {
-					"type": "string"
-				},
-				"deviceOSVersion": {
-					"type": "string"
-				},
-				"deviceModel": {
-					"type": "string"
-				},
 				"meta": {
 					"type": "array",
 					"items": {
@@ -463,15 +436,6 @@
 				},
 				"lastUpdated": {
 					"format": "date-time",
-					"type": "string"
-				},
-				"deviceOSType": {
-					"type": "string"
-				},
-				"deviceOSVersion": {
-					"type": "string"
-				},
-				"deviceModel": {
 					"type": "string"
 				},
 				"meta": {
