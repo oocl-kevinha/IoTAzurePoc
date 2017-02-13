@@ -21,7 +21,7 @@ function getIoTDevice(req, res, next) {
 			return res.status(response? response.statusCode: 500).json(err || data);
 		}
 		var querySpec = {
-			query: `SELECT TOP 1 d.deviceId, d.meta FROM ${config.collection.devices} d WHERE d.deviceId = @deviceId`
+			query: `SELECT TOP 1 d.deviceId, d.activationCode, d.meta FROM ${config.collection.devices} d WHERE d.deviceId = @deviceId`
 			, parameters: [
 				{ name: '@deviceId', value: deviceId }
 			]

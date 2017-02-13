@@ -5,9 +5,6 @@ var config = require('../azureKeys.js');
 var common = require('../common.js');
 var deviceEndpoint = require('../../common/device');
 
-/**
- * Operations on /IoTDevices/search
- */
 module.exports = {
 	post: searchIoTDevice
 };
@@ -25,7 +22,7 @@ function searchIoTDevice(req, res, next) {
 		}
 	);
 	var querySpec = {
-		query: `SELECT d.deviceId, d.deviceOSType, d.deviceOSVersion, d.deviceModel, d.meta FROM ${config.collection.devices} d` + (whereCondition.length > 0? ' JOIN m IN d.meta WHERE ' + _.join(whereCondition, ' OR '): '')
+		query: `SELECT d.deviceId, d.activationCode, d.meta FROM ${config.collection.devices} d` + (whereCondition.length > 0? ' JOIN m IN d.meta WHERE ' + _.join(whereCondition, ' OR '): '')
 		, parameters: param
 	};
 

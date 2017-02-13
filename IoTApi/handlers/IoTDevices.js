@@ -14,9 +14,28 @@ module.exports = {
 function registerIoTDevice(req, res) {
 	req.body.deviceId = req.body.deviceId || uuid.v4().toString();
 
-	// 1. Create Device on IoTHub
-	// 2. Insert Device into own DB (since some field are not support in IoTHub
-	deviceEndpoint.createIoTDeviceOnHub(req.body, req.headers.authorization, function(err, data, response) {
+	// 1. Check if device activation code duplicated
+	// 2. Create Device on IoTHub
+	// 3. Insert Device into own DB (since some fields are not support in IoTHub
+	async.waterfall([
+		function(callback) {
+			var querySpec = {
+				query: `SELECT d.deviceId FROM ${config.collection.devices} d WHERE d.activationCode = @activationCode`
+				, parameters: [{ name: '@activationCode', value: req.body.activationCode }]
+			};
+			common.queryCollection(config.collection.devices, querySpec, false, callback);
+		}
+		, function(results, callback) {
+			if (results.length > 0) {
+				return callback({ message: 'Activation Code Exists' });
+			}
+			callback(undefined);
+		}
+		, function(callback) {
+			deviceEndpoint.createIoTDeviceOnHub(req.body, req.headers.authorization, callback);
+		}
+	]
+	, function(err, data, response) {
 		if (err) {
 			res.setHeader('Access-Control-Allow-Origin', '*');
 			return res.status(500).json(err);
@@ -28,6 +47,7 @@ function registerIoTDevice(req, res) {
 
 		var deviceObj = {
 			deviceId: req.body.deviceId
+			, activationCode: req.body.activationCode
 			, meta: req.body.meta
 		};
 

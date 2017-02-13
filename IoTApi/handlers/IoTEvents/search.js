@@ -5,9 +5,6 @@ var config = require('../azureKeys.js');
 var common = require('../common.js');
 var deviceEndpoint = require('../../common/device');
 
-/**
- * Operations on /IoTDevices/search
- */
 module.exports = {
 	post: searchIoTEvent
 };

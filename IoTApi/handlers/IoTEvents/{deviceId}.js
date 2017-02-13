@@ -2,17 +2,7 @@
 var common = require('../common.js');
 var config = require('../azureKeys.js');
 
-/**
- * Operations on /IoTEvents/{deviceId}
- */
 module.exports = {
-	/**
-	 * summary:
-	 * description:
-	 * parameters: deviceId
-	 * produces: application/json, text/json
-	 * responses: 200
-	 */
 	get: queryEventByDeviceId
 };
 

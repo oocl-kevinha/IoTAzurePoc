@@ -111,7 +111,7 @@
 						"schema": {
 							"type": "array",
 							"items": {
-								"$ref": "#/definitions/IoTEvent"
+								"$ref": "#/definitions/GPSEvent"
 							}
 						}
 					}
@@ -233,6 +233,46 @@
 				"deprecated": false
 			}
 		},
+		"/IoTDevices/search/activation": {
+			"post": {
+				"description": "Search IoT Devices with activation code",
+				"tags": [
+					"Devices"
+				],
+				"operationId": "searchIoTDeviceByActivationCode",
+				"consumes": [
+					"application/json",
+					"text/json"
+				],
+				"produces": [
+					"application/json",
+					"text/json"
+				],
+				"parameters": [
+					{
+						"name": "activationCode",
+						"in": "body",
+						"schema": {
+							"type": "object",
+							"properties": {
+								"activationCode": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"$ref": "#/definitions/IoTDevice"
+						}
+					}
+				},
+				"deprecated": false
+			}
+		},
 		"/IoTDevices/{deviceId}": {
 			"get": {
 				"description": "Retrieve device's information with the deviceId",
@@ -305,6 +345,10 @@
 				},
 				"generationId": {
 					"type": "string"
+				},
+				"activationCode": {
+					"type": "string",
+					"description": "Unique activation code to activate the app"
 				},
 				"etag": {
 					"type": "string"
@@ -413,10 +457,15 @@
 		},
 		"IoTDeviceCreation": {
 			"type": "object",
+			"required": ["activationCode"],
 			"properties": {
 				"deviceId": {
 					"type": "string",
 					"description": "Device Id will be auto-generated if this field is empty"
+				},
+				"activationCode": {
+					"type": "string",
+					"description": "Unique activation code to activate the app"
 				},
 				"connectionState": {
 					"type": "string",

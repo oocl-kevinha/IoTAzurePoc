@@ -2,17 +2,8 @@
 var config = require('./azureKeys');
 var common = require('./common.js');
 var crypto = require('crypto');
-/**
- * Operations on /generateSasToken
- */
+
 module.exports = {
-	/**
-	 * summary:
-	 * description:
-	 * parameters: SasRequest
-	 * produces: application/json, text/json
-	 * responses: 200
-	 */
 	post: generateSasToken
 };
 
