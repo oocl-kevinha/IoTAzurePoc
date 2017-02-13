@@ -4,6 +4,7 @@ var port = process.env.PORT || 8000; // first change
 
 var http = require('http');
 var express = require('express');
+var cors = require('cors');
 var bodyParser = require('body-parser');
 var swaggerize = require('swaggerize-express');
 var swaggerUi = require('swaggerize-ui');
@@ -14,6 +15,7 @@ var server = http.createServer(app);
 
 require('./handlers/common').initializeDB();
 
+app.use(cors());
 app.use(bodyParser.json());
 
 app.use(swaggerize({

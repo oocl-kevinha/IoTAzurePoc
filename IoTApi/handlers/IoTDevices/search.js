@@ -35,7 +35,6 @@ function searchIoTDevice(req, res, next) {
 			async.each(
 				results
 				, function(result, callback) {
-					console.log(result);
 					deviceEndpoint.retrieveIoTDeviceOnHubById(result.deviceId, req.headers.authorization, function(err, data, response) {
 						if (err) {
 							return callback(err);
