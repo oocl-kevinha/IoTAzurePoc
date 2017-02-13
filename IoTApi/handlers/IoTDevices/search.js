@@ -31,9 +31,11 @@ function searchIoTDevice(req, res, next) {
 
 	common.queryCollection(config.collection.devices, querySpec, false)
 		.then((results) => {
-			async.concat(
+			var retVal = [];
+			async.each(
 				results
 				, function(result, callback) {
+					console.log(result);
 					deviceEndpoint.retrieveIoTDeviceOnHubById(result.deviceId, req.headers.authorization, function(err, data, response) {
 						if (err) {
 							return callback(err);
@@ -41,21 +43,25 @@ function searchIoTDevice(req, res, next) {
 						if(!response || !(response.statusCode >= 200 && response.statusCode < 300 || response.statusCode === 304 || response.statusCode === 1223)) {
 							return callback(response? `Invalid Status Code [${response.statusCode}] from IoTHub`: 'No response');
 						}
-						callback(undefined, _.merge(result, req.query.showKeys? data: _.omit(data, 'authentication')));
+						retVal.push(_.merge(result, req.query.showKeys? data: _.omit(data, 'authentication')));
+						callback(undefined);
 					});
 				}
-				, function(err, mergedDocs) {
+				, function(err) {
 					if (err) {
 						console.log(err);
+						res.setHeader('Access-Control-Allow-Origin', '*');
 						return res.status(500).json(err);
 					}
-					res.status(200).json(_.compact(mergedDocs));
+					res.setHeader('Access-Control-Allow-Origin', '*');
+					res.status(200).json(_.compact(retVal));
 				}
 			);
 
 		})
 		.catch((error) => {
 			console.log(error);
+			res.setHeader('Access-Control-Allow-Origin', '*');
 			res.status(500).json(error);
 		});
 }

@@ -28,9 +28,11 @@ function queryEventByDeviceId(req, res, next) {
 
 	common.queryCollection(config.collection.events, querySpec, false)
 		.then((results) => {
+			res.setHeader('Access-Control-Allow-Origin', '*');
 			res.status(200).json(results);
 		})
 		.catch((error) => {
+			res.setHeader('Access-Control-Allow-Origin', '*');
 			res.status(500).json(error);
 		});
 }

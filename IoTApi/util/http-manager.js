@@ -39,7 +39,8 @@ function sendJSONRequest(header, requestUrl, method, in_data, parseResponse, cal
 			response.on('end', function() {
 				try {
 					if (parseResponse) {
-						return callback(undefined, JSON.parse(data), response);
+						var parsedData = JSON.parse(data);
+						return callback(undefined, parsedData, response);
 					}
 					callback(undefined, data, response);
 				} catch (ex) {

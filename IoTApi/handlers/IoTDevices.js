@@ -18,9 +18,11 @@ function registerIoTDevice(req, res) {
 	// 2. Insert Device into own DB (since some field are not support in IoTHub
 	deviceEndpoint.createIoTDeviceOnHub(req.body, req.headers.authorization, function(err, data, response) {
 		if (err) {
+			res.setHeader('Access-Control-Allow-Origin', '*');
 			return res.status(500).json(err);
 		}
 		if(!response || !(response.statusCode >= 200 && response.statusCode < 300 || response.statusCode === 304 || response.statusCode === 1223)) {
+			res.setHeader('Access-Control-Allow-Origin', '*');
 			return res.status(response? response.statusCode: 500).json(err || data);
 		}
 
@@ -31,10 +33,12 @@ function registerIoTDevice(req, res) {
 
 		common.insertDocument(config.collection.devices, deviceObj)
 			.then((insertedDoc) => {
+				res.setHeader('Access-Control-Allow-Origin', '*');
 				res.status(200).json(_.merge(data, req.body));
 			})
 			.catch((error) => {
 				console.log(error);
+				res.setHeader('Access-Control-Allow-Origin', '*');
 				res.status(500).json(error);
 			});
 	});
@@ -85,13 +89,16 @@ function updateIoTDevice(req, res) {
 		, function(err, updatedDevice) {
 			if (err) {
 				if (err === 'NOT_FOUND') {
+					res.setHeader('Access-Control-Allow-Origin', '*');
 					res.status(404).json({message: `Device [${req.body.deviceId}] not found`});
 				} else {
 					console.log(err);
+					res.setHeader('Access-Control-Allow-Origin', '*');
 					res.status(500).json(err);
 				}
 				return;
 			}
+			res.setHeader('Access-Control-Allow-Origin', '*');
 			res.status(200).json(updatedDevice);
 		}
 	);

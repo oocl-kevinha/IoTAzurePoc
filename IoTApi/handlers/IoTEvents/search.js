@@ -35,13 +35,16 @@ function searchIoTEvent(req, res, next) {
 			fetchItems(results, resultArr, function(err) {
 				if (err) {
 					console.log(err);
+					res.setHeader('Access-Control-Allow-Origin', '*');
 					return res.status(500).json(err);
 				}
+				res.setHeader('Access-Control-Allow-Origin', '*');
 				res.status(200).json(resultArr);
 			});
 		})
 		.catch((error) => {
 			console.log(error);
+			res.setHeader('Access-Control-Allow-Origin', '*');
 			res.status(500).json(error);
 		});
 }
