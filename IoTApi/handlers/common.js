@@ -4,13 +4,11 @@ var DocumentClient = require('documentdb').DocumentClient;
 var config = require('./azureKeys.js');
 var url = require('url');
 
-var client = new DocumentClient(config.endpoint, { 'masterKey': config.primaryKey });
+var client = new DocumentClient(config.endpoint, { masterKey: config.primaryKey });
 
 var HttpStatusCodes = { NOTFOUND: 404 };
-var databaseUrl = 'dbs/' + config.database.id;
-var collectionUrlBase = databaseUrl + '/colls/';// + config.collection.id;
-
-//var data = ['abc'];
+var databaseUrl = `dbs/${config.database.id}`;
+var collectionUrlBase = `${databaseUrl}/colls/`;
 
 module.exports = {
 	initializeDB: initializeDB
@@ -56,13 +54,7 @@ function generateSasToken(resourceUri, signingKey, policyName, expiresInMins) {
 	return token;
 }
 
-/**
- * Get the document database by ID, or create if it doesn't exist.
- * @param {string} database - The database to get or create
- */
 function getDatabase(database) {
-	console.log('Getting database: [%s]', database || config.database.id);
-
 	return new Promise((resolve, reject) => {
 		client.readDatabase(databaseUrl, (err, result) => {
 			if (err) {
@@ -81,12 +73,7 @@ function getDatabase(database) {
 	});
 }
 
-/**
- * Get the collection by ID, or create if it doesn't exist.
- */
 function getCollection(collectionName) {
-	console.log('Getting collection: [%s]', collectionName);
-
 	return new Promise((resolve, reject) => {
 		client.readCollection(buildCollectionUrl(collectionName), (err, result) => {
 			if (err) {
@@ -105,30 +92,29 @@ function getCollection(collectionName) {
 	});
 }
 
-/**
- * Query the collection using SQL
- */
-function queryCollection(collectionName, query, callback) {
-	console.log('Querying collection through:\n%s', query);
-	//var queryData = [];
+function queryCollection(collectionName, query, isIterator, callback) {
 	return new Promise((resolve, reject) => {
-		client.queryDocuments(
-			buildCollectionUrl(collectionName),
-			query
-		).toArray((err, results) => {
+		var iterator = client.queryDocuments(buildCollectionUrl(collectionName), query);
+		if (isIterator) {
 			if (callback) {
-				callback(err, results);
+				callback(undefined, iterator);
 			}
-			if (err) {
-				return reject(err);
-			}
-			resolve(results);
-		});
+			resolve(iterator);
+		} else {
+			iterator.toArray((err, results) => {
+				if (callback) {
+					callback(err, results);
+				}
+				if (err) {
+					return reject(err);
+				}
+				resolve(results);
+			});
+		}
 	});
 }
 
 function insertDocument(collectionName, document, callback) {
-	console.log(`insert into ${collectionName}`);
 	return new Promise((resolve, reject) => {
 		client.createDocument(buildCollectionUrl(collectionName), document, function(err, doc) {
 			if (callback) {
@@ -143,7 +129,6 @@ function insertDocument(collectionName, document, callback) {
 }
 
 function updateDocument(document, callback) {
-	//console.log(`update into ${collectionName}`);
 	return new Promise((resolve, reject) => {
 		client.replaceDocument(document._self, document, function(err, doc) {
 			if (callback) {

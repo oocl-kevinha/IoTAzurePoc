@@ -13,10 +13,10 @@ module.exports = {
 	 * produces: application/json, text/json
 	 * responses: 200
 	 */
-	get: queryEventById
+	get: queryEventByDeviceId
 };
 
-function queryEventById(req, res, next) {
+function queryEventByDeviceId(req, res, next) {
 	console.log('req param = ' + req.params.deviceId);
 	var querySpec = {
 		query: `SELECT * FROM ${config.collection.events} r WHERE r.deviceId = @deviceId`
@@ -26,15 +26,11 @@ function queryEventById(req, res, next) {
 	};
 	var deviceId = req.params.deviceId;
 
-	common.queryCollection(config.collection.events, querySpec)
+	common.queryCollection(config.collection.events, querySpec, false)
 		.then((results) => {
-			// console.log("common.data = " + common.data);
-			console.log("common.data = " + results);
 			res.status(200).json(results);
 		})
 		.catch((error) => {
-			//status = 500;
-			console.log(error);
 			res.status(500).json(error);
 		});
 }

@@ -24,7 +24,7 @@ function getIoTDevice(req, res, next) {
 				{ name: '@deviceId', value: deviceId }
 			]
 		};
-		common.queryCollection(config.collection.devices, querySpec)
+		common.queryCollection(config.collection.devices, querySpec, false)
 			.then((results) => {
 				res.status(200).json(results.length > 0? _.merge(data, results[0]): {});
 			})

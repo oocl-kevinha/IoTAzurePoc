@@ -29,7 +29,7 @@ function searchIoTDevice(req, res, next) {
 		, parameters: param
 	};
 
-	common.queryCollection(config.collection.devices, querySpec)
+	common.queryCollection(config.collection.devices, querySpec, false)
 		.then((results) => {
 			async.concat(
 				results

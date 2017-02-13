@@ -51,7 +51,7 @@ function updateIoTDevice(req, res) {
 	async.waterfall(
 		[
 			function(callback) {
-				common.queryCollection(config.collection.devices, querySpec, callback);
+				common.queryCollection(config.collection.devices, querySpec, false, callback);
 			}
 			, function(results, callback) {
 				if (results.length > 0) {

@@ -81,6 +81,44 @@
 				"deprecated": false
 			}
 		},
+		"/IoTEvents/search": {
+			"post": {
+				"description": "Search IoT Events",
+				"tags": [
+					"Events"
+				],
+				"operationId": "searchIoTEvent",
+				"consumes": [
+					"application/json",
+					"text/json"
+				],
+				"produces": [
+					"application/json",
+					"text/json"
+				],
+				"parameters": [
+					{
+						"name": "searchCondition",
+						"in": "body",
+						"schema": {
+							"$ref": "#/definitions/IoTEventSearchCondition"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"schema": {
+							"type": "array",
+							"items": {
+								"$ref": "#/definitions/IoTEvent"
+							}
+						}
+					}
+				},
+				"deprecated": false
+			}
+		},
 		"/IoTDevices": {
 			"post": {
 				"description": "Register the device to IoTHub and record custom meta data in DocumentDB",
@@ -346,6 +384,29 @@
 					"value": {
 						"type": "string",
 						"description": "Value of the Meta Field"
+					}
+				}
+			}
+		},
+		"IoTEventSearchCondition": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["key", "value"],
+				"properties": {
+					"key": {
+						"type": "string",
+						"description": "Name of the Event Field"
+					},
+					"operator": {
+						"type": "string",
+						"description": "Operator to comparing the field value, currently equal only",
+						"enum": ["="],
+						"default": "="
+					},
+					"value": {
+						"type": "string",
+						"description": "Value of the Event Field"
 					}
 				}
 			}
