@@ -5,6 +5,7 @@ var uuid = require('uuid');
 var common = require('./common.js');
 var config = require('./azureKeys.js');
 var deviceEndpoint = require('../common/device');
+var responseFactory = require('../util/response-factory');
 
 module.exports = {
 	post: registerIoTDevice
@@ -27,7 +28,7 @@ function registerIoTDevice(req, res) {
 		}
 		, function(results, callback) {
 			if (results.length > 0) {
-				return callback({ message: 'Activation Code Exists' });
+				return callback('Activation Code Exists');
 			}
 			callback(undefined);
 		}
@@ -37,12 +38,10 @@ function registerIoTDevice(req, res) {
 	]
 	, function(err, data, response) {
 		if (err) {
-			res.setHeader('Access-Control-Allow-Origin', '*');
-			return res.status(500).json(err);
+			return res.status(500).json(responseFactory.buildFailureResponse(err));
 		}
 		if(!response || !(response.statusCode >= 200 && response.statusCode < 300 || response.statusCode === 304 || response.statusCode === 1223)) {
-			res.setHeader('Access-Control-Allow-Origin', '*');
-			return res.status(response? response.statusCode: 500).json(err || data);
+			return res.json(responseFactory.buildFailureResponse(response? `Invalid Status Code [${response.statusCode}] from IoTHub`: 'No response', response? response.statusCode: undefined, data));
 		}
 
 		var deviceObj = {
@@ -53,13 +52,11 @@ function registerIoTDevice(req, res) {
 
 		common.insertDocument(config.collection.devices, deviceObj)
 			.then((insertedDoc) => {
-				res.setHeader('Access-Control-Allow-Origin', '*');
-				res.status(200).json(_.merge(data, req.body));
+				res.json(responseFactory.buildSuccessResponse(_.merge(data, req.body)));
 			})
 			.catch((error) => {
-				console.log(error);
-				res.setHeader('Access-Control-Allow-Origin', '*');
-				res.status(500).json(error);
+				console.error(error);
+				res.status(500).json(responseFactory.buildSuccessResponse(error));
 			});
 	});
 }
@@ -109,17 +106,14 @@ function updateIoTDevice(req, res) {
 		, function(err, updatedDevice) {
 			if (err) {
 				if (err === 'NOT_FOUND') {
-					res.setHeader('Access-Control-Allow-Origin', '*');
-					res.status(404).json({message: `Device [${req.body.deviceId}] not found`});
+					res.json(responseFactory.buildFailureResponse(`Device [${req.body.deviceId}] not found`, 404));
 				} else {
-					console.log(err);
-					res.setHeader('Access-Control-Allow-Origin', '*');
-					res.status(500).json(err);
+					console.error(err);
+					res.status(500).json(responseFactory.buildFailureResponse(err));
 				}
 				return;
 			}
-			res.setHeader('Access-Control-Allow-Origin', '*');
-			res.status(200).json(updatedDevice);
+			res.json(responseFactory.buildSuccessResponse(updatedDevice));
 		}
 	);
 }

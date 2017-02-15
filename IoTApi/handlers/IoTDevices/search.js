@@ -4,6 +4,7 @@ var async = require('async');
 var config = require('../azureKeys.js');
 var common = require('../common.js');
 var deviceEndpoint = require('../../common/device');
+var responseFactory = require('../../util/response-factory');
 
 module.exports = {
 	post: searchIoTDevice
@@ -29,6 +30,7 @@ function searchIoTDevice(req, res, next) {
 	common.queryCollection(config.collection.devices, querySpec, false)
 		.then((results) => {
 			var retVal = [];
+			var lastErrorData, lastErrorStatus;
 			async.each(
 				results
 				, function(result, callback) {
@@ -37,6 +39,8 @@ function searchIoTDevice(req, res, next) {
 							return callback(err);
 						}
 						if(!response || !(response.statusCode >= 200 && response.statusCode < 300 || response.statusCode === 304 || response.statusCode === 1223)) {
+							lastErrorData = data;
+							lastErrorStatus = response? response.statusCode: undefined;
 							return callback(response? `Invalid Status Code [${response.statusCode}] from IoTHub`: 'No response');
 						}
 						retVal.push(_.merge(result, req.query.showKeys? data: _.omit(data, 'authentication')));
@@ -45,20 +49,17 @@ function searchIoTDevice(req, res, next) {
 				}
 				, function(err) {
 					if (err) {
-						console.log(err);
-						res.setHeader('Access-Control-Allow-Origin', '*');
-						return res.status(500).json(err);
+						console.error(err);
+						return res.status(500).json(responseFactory.buildFailureResponse(err, lastErrorStatus, lastErrorData));
 					}
-					res.setHeader('Access-Control-Allow-Origin', '*');
-					res.status(200).json(_.compact(retVal));
+					res.json(responseFactory.buildSuccessResponse(_.compact(retVal)));
 				}
 			);
 
 		})
 		.catch((error) => {
 			console.log(error);
-			res.setHeader('Access-Control-Allow-Origin', '*');
-			res.status(500).json(error);
+			res.status(500).json(responseFactory.buildFailureResponse(error));
 		});
 }
 

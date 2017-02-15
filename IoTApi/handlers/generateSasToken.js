@@ -2,6 +2,7 @@
 var config = require('./azureKeys');
 var common = require('./common.js');
 var crypto = require('crypto');
+var responseFactory = require('../util/response-factory');
 
 module.exports = {
 	post: generateSasToken
@@ -15,6 +16,5 @@ function generateSasToken(req, res, next) {
 	var expiresInMins = SasRequest.expiresInMins;
 
 	var token = common.generateSasToken(resourceUri, signingKey, policyName, expiresInMins);
-	res.setHeader('Access-Control-Allow-Origin', '*');
-	res.status(200).json({token: token});
+	res.json(responseFactory.buildSuccessResponse({token: token}));
 }

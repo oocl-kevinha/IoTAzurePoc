@@ -17,6 +17,10 @@ require('./handlers/common').initializeDB();
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(function(req, res, next) {
+	res.setHeader('Access-Control-Allow-Origin', '*');
+	next();
+});
 
 app.use(swaggerize({
 	api: path.resolve('./config/swagger.json'),
@@ -29,5 +33,5 @@ app.use('/docs', swaggerUi({
 }));
 
 server.listen(port, function () { // fifth and final change
-	console.log('App running on %s:%d', this.address().address, this.address().port);
+	console.info('App running on %s:%d', this.address().address, this.address().port);
 });

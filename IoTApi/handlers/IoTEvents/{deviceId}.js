@@ -1,6 +1,7 @@
 'use strict';
 var common = require('../common.js');
 var config = require('../azureKeys.js');
+var responseFactory = require('../../util/response-factory');
 
 module.exports = {
 	get: queryEventByDeviceId
@@ -13,15 +14,13 @@ function queryEventByDeviceId(req, res, next) {
 			{ name: '@deviceId', value: req.params.deviceId }
 		]
 	};
-	console.log(querySpec);
 
 	common.queryCollection(config.collection.events, querySpec, false)
 		.then((results) => {
-			res.setHeader('Access-Control-Allow-Origin', '*');
-			res.status(200).json(results);
+			res.json(responseFactory.buildSuccessResponse(results));
 		})
 		.catch((error) => {
-			res.setHeader('Access-Control-Allow-Origin', '*');
-			res.status(500).json(error);
+			console.error(err);
+			res.status(500).json(responseFactory.buildFailureResponse(error));
 		});
 }
