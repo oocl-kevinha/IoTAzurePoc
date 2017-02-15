@@ -1,7 +1,7 @@
 var _ = require('lodash');
 
 exports.buildSuccessResponse = function(data, code) {
-	return buildServerResponse(true, data, code || 200);
+	return buildServerResponse(true, data, undefined, code || 200);
 };
 
 exports.buildFailureResponse = function(error, code, data) {

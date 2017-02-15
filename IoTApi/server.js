@@ -25,7 +25,8 @@ app.use(function(req, res, next) {
 app.use(swaggerize({
 	api: path.resolve('./config/swagger.json'),
 	handlers: path.resolve('./handlers'),
-	docspath: '/swagger'
+	docspath: '/swagger',
+	security: './security'
 }));
 
 app.use('/docs', swaggerUi({

@@ -10,7 +10,8 @@
 			"type": "apiKey",
 			"name": "Authorization",
 			"in": "header",
-			"description": "SAS Token"
+			"description": "SAS Token",
+			"x-authorize": "security/authorize.js"
 		}
 	},
 	"paths": {
@@ -37,9 +38,24 @@
 				],
 				"responses": {
 					"200": {
-						"description": "OK",
 						"schema": {
-							"$ref": "#/definitions/SasToken"
+							"type": "object",
+							"required": ["success"],
+							"properties": {
+								"success": {
+									"type": "boolean"
+								},
+								"errMessage": {
+									"type": "string"
+								},
+								"statusCode": {
+									"type": "number",
+									"format": "int32"
+								},
+								"data": {
+									"$ref": "#/definitions/SasToken"
+								}
+							}
 						}
 					}
 				},
@@ -69,11 +85,26 @@
 				],
 				"responses": {
 					"200": {
-						"description": "OK",
 						"schema": {
-							"type": "array",
-							"items": {
-								"$ref": "#/definitions/GPSEvent"
+							"type": "object",
+							"required": ["success"],
+							"properties": {
+								"success": {
+									"type": "boolean"
+								},
+								"errMessage": {
+									"type": "string"
+								},
+								"statusCode": {
+									"type": "number",
+									"format": "int32"
+								},
+								"data": {
+									"type": "array",
+									"items": {
+										"$ref": "#/definitions/GPSEvent"
+									}
+								}
 							}
 						}
 					}
@@ -107,11 +138,26 @@
 				],
 				"responses": {
 					"200": {
-						"description": "OK",
 						"schema": {
-							"type": "array",
-							"items": {
-								"$ref": "#/definitions/GPSEvent"
+							"type": "object",
+							"required": ["success"],
+							"properties": {
+								"success": {
+									"type": "boolean"
+								},
+								"errMessage": {
+									"type": "string"
+								},
+								"statusCode": {
+									"type": "number",
+									"format": "int32"
+								},
+								"data": {
+									"type": "array",
+									"items": {
+										"$ref": "#/definitions/GPSEvent"
+									}
+								}
 							}
 						}
 					}
@@ -146,13 +192,29 @@
 				],
 				"responses": {
 					"200": {
-						"description": "OK",
 						"schema": {
-							"$ref": "#/definitions/IoTDevice"
+							"type": "object",
+							"required": ["success"],
+							"properties": {
+								"success": {
+									"type": "boolean"
+								},
+								"errMessage": {
+									"type": "string"
+								},
+								"statusCode": {
+									"type": "number",
+									"format": "int32"
+								},
+								"data": {
+									"$ref": "#/definitions/IoTDevice"
+								}
+							}
 						}
 					}
 				},
-				"deprecated": false
+				"deprecated": false,
+				"security": [{ "Authorization": [] }]
 			},
 			"put": {
 				"description": "Update the device custom meta data",
@@ -180,13 +242,29 @@
 				],
 				"responses": {
 					"200": {
-						"description": "OK",
 						"schema": {
-							"$ref": "#/definitions/IoTDevice"
+							"type": "object",
+							"required": ["success"],
+							"properties": {
+								"success": {
+									"type": "boolean"
+								},
+								"errMessage": {
+									"type": "string"
+								},
+								"statusCode": {
+									"type": "number",
+									"format": "int32"
+								},
+								"data": {
+									"$ref": "#/definitions/IoTDevice"
+								}
+							}
 						}
 					}
 				},
-				"deprecated": false
+				"deprecated": false,
+				"security": [{ "Authorization": [] }]
 			}
 		},
 		"/IoTDevices/search": {
@@ -221,16 +299,32 @@
 				],
 				"responses": {
 					"200": {
-						"description": "OK",
 						"schema": {
-							"type": "array",
-							"items": {
-								"$ref": "#/definitions/IoTDevice"
+							"type": "object",
+							"required": ["success"],
+							"properties": {
+								"success": {
+									"type": "boolean"
+								},
+								"errMessage": {
+									"type": "string"
+								},
+								"statusCode": {
+									"type": "number",
+									"format": "int32"
+								},
+								"data": {
+									"type": "array",
+									"items": {
+										"$ref": "#/definitions/IoTDevice"
+									}
+								}
 							}
 						}
 					}
 				},
-				"deprecated": false
+				"deprecated": false,
+				"security": [{ "Authorization": [] }]
 			}
 		},
 		"/IoTDevices/search/activation": {
@@ -264,13 +358,29 @@
 				],
 				"responses": {
 					"200": {
-						"description": "OK",
 						"schema": {
-							"$ref": "#/definitions/IoTDevice"
+							"type": "object",
+							"required": ["success"],
+							"properties": {
+								"success": {
+									"type": "boolean"
+								},
+								"errMessage": {
+									"type": "string"
+								},
+								"statusCode": {
+									"type": "number",
+									"format": "int32"
+								},
+								"data": {
+									"$ref": "#/definitions/IoTDevice"
+								}
+							}
 						}
 					}
 				},
-				"deprecated": false
+				"deprecated": false,
+				"security": [{ "Authorization": [] }]
 			}
 		},
 		"/IoTDevices/{deviceId}": {
@@ -299,13 +409,29 @@
 				],
 				"responses": {
 					"200": {
-						"description": "OK",
 						"schema": {
-							"$ref": "#/definitions/IoTDevice"
+							"type": "object",
+							"required": ["success"],
+							"properties": {
+								"success": {
+									"type": "boolean"
+								},
+								"errMessage": {
+									"type": "string"
+								},
+								"statusCode": {
+									"type": "number",
+									"format": "int32"
+								},
+								"data": {
+									"$ref": "#/definitions/IoTDevice"
+								}
+							}
 						}
 					}
 				},
-				"deprecated": false
+				"deprecated": false,
+				"security": [{ "Authorization": [] }]
 			}
 		}
 	},
