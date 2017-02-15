@@ -41,6 +41,6 @@ function searchIoTDevice(req, res) {
 		.catch((error) => {
 			console.error(error);
 			res.setHeader('Access-Control-Allow-Origin', '*');
-			res.status(500).json(responseFactory.buildFailreResponse(error));
+			res.status(500).json(responseFactory.buildFailureResponse(error));
 		});
 }

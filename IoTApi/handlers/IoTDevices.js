@@ -38,7 +38,13 @@ function registerIoTDevice(req, res) {
 	]
 	, function(err, data, response) {
 		if (err) {
-			return res.status(500).json(responseFactory.buildFailureResponse(err));
+			if (err === 'Activation Code Exists') {
+				res.json(responseFactory.buildFailureResponse(err));
+			} else {
+				console.error(err);
+				res.status(500).json(responseFactory.buildFailureResponse(err));
+			}
+			return;
 		}
 		if(!response || !(response.statusCode >= 200 && response.statusCode < 300 || response.statusCode === 304 || response.statusCode === 1223)) {
 			return res.json(responseFactory.buildFailureResponse(response? `Invalid Status Code [${response.statusCode}] from IoTHub`: 'No response', response? response.statusCode: undefined, data));
