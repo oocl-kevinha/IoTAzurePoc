@@ -18,7 +18,6 @@ function searchIoTDevice(req, res) {
 
 	common.queryCollection(config.collection.devices, querySpec, false)
 		.then((results) => {
-			res.setHeader('Access-Control-Allow-Origin', '*');
 			if (results.length > 0) {
 				deviceEndpoint.retrieveIoTDeviceOnHubById(results[0].deviceId, req.headers.authorization, function(err, data, response) {
 					if (err) {
@@ -40,7 +39,6 @@ function searchIoTDevice(req, res) {
 		})
 		.catch((error) => {
 			console.error(error);
-			res.setHeader('Access-Control-Allow-Origin', '*');
 			res.status(500).json(responseFactory.buildFailureResponse(error));
 		});
 }
