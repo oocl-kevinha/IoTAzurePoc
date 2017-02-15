@@ -7,14 +7,13 @@ module.exports = {
 };
 
 function queryEventByDeviceId(req, res, next) {
-	console.log('req param = ' + req.params.deviceId);
 	var querySpec = {
-		query: `SELECT * FROM ${config.collection.events} r WHERE r.deviceId = @deviceId`
-		, paramters: [
-			{ name: '@deviceId', value: req.param.deviceId }
+		query: `SELECT * FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId`
+		, parameters: [
+			{ name: '@deviceId', value: req.params.deviceId }
 		]
 	};
-	var deviceId = req.params.deviceId;
+	console.log(querySpec);
 
 	common.queryCollection(config.collection.events, querySpec, false)
 		.then((results) => {
