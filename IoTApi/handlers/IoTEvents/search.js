@@ -23,7 +23,7 @@ function searchIoTEvent(req, res, next) {
 		}
 	);
 	var querySpec = {
-		query: `SELECT * FROM ${config.collection.events} e` + (whereCondition.length > 0? ' WHERE ' + _.join(whereCondition, ' OR '): '')
+		query: `SELECT * FROM ${config.collection.events} e` + (whereCondition.length > 0? ' WHERE ' + _.join(whereCondition, ' OR '): '') + ' ORDER BY r.timeStamp DESC'
 		, parameters: param
 	};
 
