@@ -9,7 +9,7 @@ module.exports = {
 
 function queryEventByDeviceId(req, res, next) {
 	var querySpec = {
-		query: `SELECT * FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId ORDER BY r.EventEnqueuedUtcTime DESC`
+		query: `SELECT * FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId ORDER BY r.timeStamp DESC`
 		, parameters: [
 			{ name: '@deviceId', value: req.params.deviceId }
 		]
