@@ -1,7 +1,7 @@
 var crypto = require('crypto');
 
 var DocumentClient = require('documentdb').DocumentClient;
-var config = require('./azureKeys.js');
+var config = require('../config/azure-keys.js');
 var url = require('url');
 
 var client = new DocumentClient(config.endpoint, { masterKey: config.primaryKey });
@@ -26,8 +26,9 @@ function initializeDB() {
 	getDatabase()
 		.then(() => getCollection(config.collection.devices))
 		.then(() => getCollection(config.collection.events))
+		.then(() => getCollection(config.collection.geoFences))
 		.then(() => console.log('All collections initialized'))
-		.catch((error) => console.error(`DB/Collection initialization failed [${error}]`));
+		.catch((error) => console.error('DB/Collection initialization failed [' + JSON.stringify(error, false, null) + ']'));
 }
 
 function buildCollectionUrl(collectionName) {
@@ -84,10 +85,12 @@ function getCollection(collectionName) {
 						}
 						return resolve(created);
 					});
+				} else {
+					return reject(err);
 				}
-				return reject(err);
+			} else {
+				resolve(result);
 			}
-			resolve(result);
 		});
 	});
 }

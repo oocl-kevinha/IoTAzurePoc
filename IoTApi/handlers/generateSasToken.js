@@ -1,6 +1,6 @@
 'use strict';
-var config = require('./azureKeys');
-var common = require('./common.js');
+var config = require('../config/azure-keys');
+var common = require('../util/common');
 var crypto = require('crypto');
 var responseFactory = require('../util/response-factory');
 

@@ -1,8 +1,8 @@
 'use strict';
 var _ = require('lodash');
-var config = require('../azureKeys.js');
-var common = require('../common.js');
-var deviceEndpoint = require('../../common/device');
+var config = require('../../config/azure-keys');
+var common = require('../../util/common');
+var deviceEndpoint = require('../../util/device');
 var responseFactory = require('../../util/response-factory');
 
 module.exports = {

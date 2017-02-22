@@ -1,10 +1,10 @@
 'use strict';
 var _ = require('lodash');
 var async = require('async');
-var config = require('../../azureKeys.js');
-var common = require('../../common.js');
+var config = require('../../../config/azure-keys');
+var common = require('../../../util/common');
 var responseFactory = require('../../../util/response-factory');
-var deviceEndpoint = require('../../../common/device');
+var deviceEndpoint = require('../../../util/device');
 
 module.exports = {
 	post: searchIoTDevice

@@ -2,9 +2,9 @@
 var _ = require('lodash');
 var async = require('async');
 var uuid = require('uuid');
-var common = require('./common.js');
-var config = require('./azureKeys.js');
-var deviceEndpoint = require('../common/device');
+var common = require('../util/common');
+var config = require('../config/azure-keys');
+var deviceEndpoint = require('../util/device');
 var responseFactory = require('../util/response-factory');
 
 module.exports = {

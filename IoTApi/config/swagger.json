@@ -570,8 +570,8 @@
 					},
 					"operator": {
 						"type": "string",
-						"description": "Operator to comparing the field value, currently equal only",
-						"enum": ["="],
+						"description": "Operator to comparing the field value, =, >=, <=, >, <",
+						"enum": ["=", ">", "<", ">=", "<"],
 						"default": "="
 					},
 					"value": {
