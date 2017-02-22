@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Geo Fence Modeling</title>
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="/bower/bootstrap/dist/css/bootstrap.min.css" />
+		<link rel="stylesheet" href="/bower/bootstrap-table/dist/bootstrap-table.min.css" />
+		<link rel="stylesheet" href="/css/dist/lib-css.min.css" />
+		<script src="/bower/jquery/dist/jquery.min.js"></script>
+		<script src="/bower/moment/min/moment.min.js"></script>
+		<script src="/bower/bootstrap/dist/js/bootstrap.min.js"></script>
+		<script src="/bower/bootstrap-table/dist/bootstrap-table.min.js"></script>
+		<script src="/bower/vue/dist/vue.min.js"></script>
+		<script src="/bower/lodash/dist/lodash.min.js"></script>
+		<script src="https://maps.googleapis.com/maps/api/js?key=<%= mapKey %>&libraries=drawing,places&callback=initMap" async defer></script>
+		<script src="/js/dist/common-components.min.js"></script>
+	</head>
+	<body>
+		<div id="map" class="col-md-6"></div>
+		<div class="col-md-6">
+			<table id="geoFenceTable"></table>
+			<div id="geoFenceTableToolbar" class="form-inline">
+				<input id="tfAddress" class="form-control" type="text" placeholder="Search in Map" />
+				<!--<button type="button" class="btn btn-default" v-on:click="clearSelection()">Clear Selection</button>-->
+			</div>
+		</div>
+		<%- include ./common/dialogs.ejs %>
+	</body>
+</html>
