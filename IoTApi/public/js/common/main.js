@@ -93,7 +93,14 @@ function initMap() {
 			//map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
 
 			// Bias the SearchBox results towards current map's viewport.
-			map.addListener('bounds_changed', function() {
+			// map.addListener('bounds_changed', function() {
+				// console.log('bound event');
+				// searchBox.setBounds(map.getBounds());
+				// self.loadGeoFenceInBound();
+			// });
+			// Use idle to reduce bounds_change event on geo fence query
+			// Need further enhancement on reducing ajax call
+			map.addListener('idle', function() {
 				searchBox.setBounds(map.getBounds());
 				self.loadGeoFenceInBound();
 			});
@@ -151,12 +158,13 @@ function initMap() {
 				var self = this;
 				$.httpHelper.sendDelete('/geo/' + row.geoId, function(responseData, status) {
 					$.dialog.info('Geo Fence is deleted');
-					self.removeShape(row.geoType, _.filter(self.shapes, { geoId: row.geoId })[0].shapeRef);
+					var shape = _.filter(self.shapes, { geoId: row.geoId })[0];
+					shape.markerRef.setMap(null);
+					self.removeShape(row.geoType, shape.shapeRef);
 				});
 			}
 			, removeShape: function(shapeType, shapeObject) {
 				var self = this;
-				console.log(shapeObject);
 				shapeObject.setMap(null);
 				_.remove(self.shapes, { geoId: shapeObject.geoId });
 				$('#geoFenceTable').bootstrapTable('removeByUniqueId', shapeObject.geoId);
@@ -165,6 +173,8 @@ function initMap() {
 				var self = this;
 				shapeObject.geoId = data.geoId;
 				shapeObject.setMap(self.$get('map'));
+				var marker = self.createShapeMarker(data, shapeObject);
+				marker.setMap(self.$get('map'));
 				// shapeObject.addListener('click', function(clickEvt) {
 				// 	self.removeShape(data.geoType, shapeObject);
 				// });
@@ -175,10 +185,25 @@ function initMap() {
 						, geoType: data.geoType
 						, coords: data.coords.coordinates
 						, shapeRef: shapeObject
+						, markerRef: marker
 						, radiusInMetre: data.radiusInMetre
 						, createdAt: data.createdAt
 					}
 				);
+			}
+			, createShapeMarker: function(data, shapeObject) {
+				var icon = {
+					url: 'https://maps.gstatic.com/mapfiles/place_api/icons/geocode-71.png',
+					// size: new google.maps.Size(71, 71),
+					// anchor: new google.maps.Point(17, 34),
+					scaledSize: new google.maps.Size(25, 25)
+				};
+				var coordinate = (data.geoType === google.maps.drawing.OverlayType.CIRCLE? data.coords.coordinates: data.coords.coordinates[0][0]);
+				return new google.maps.Marker({
+					icon: icon,
+					title: data.geoName,
+					position: new google.maps.LatLng(coordinate[1], coordinate[0])
+				});
 			}
 			, addShape: function(shapeType, shapeObject) {
 				var self = this;
@@ -252,10 +277,14 @@ function initMap() {
 					, [latLngBounds.east, latLngBounds.south]
 					, [latLngBounds.east, latLngBounds.north]
 				];
+				// _.forEach(self.shapes, function(shape) { shape.shapeRef.setMap(null); });
+				// self.$set('shapes', []);
 				$.httpHelper.sendPost(
 					'/geo/search/bound'
 					, boundArea
 					, function(responseData, status) {
+						_.forEach(self.shapes, function(shape) { shape.shapeRef.setMap(null); });
+						self.$set('shapes', []);
 						_.forEach(responseData.data, function(data) {
 							var shapeObject;
 							if (data.geoType === google.maps.drawing.OverlayType.CIRCLE) {
