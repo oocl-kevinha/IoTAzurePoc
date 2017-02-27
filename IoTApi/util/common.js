@@ -1,6 +1,7 @@
 var crypto = require('crypto');
 
 var DocumentClient = require('documentdb').DocumentClient;
+var EventHubClient = require('azure-event-hubs').Client;
 var config = require('../config/azure-keys.js');
 var url = require('url');
 
@@ -11,22 +12,44 @@ var databaseUrl = `dbs/${config.database.id}`;
 var collectionUrlBase = `${databaseUrl}/colls/`;
 
 module.exports = {
-	initializeDB: initializeDB
+	initializeEventListener: initializeEventListener
+	, initializeDB: initializeDB
 	, generateSasToken: generateSasToken
 	, getDatabase: getDatabase
 	, getCollection: getCollection
 	, queryCollection: queryCollection
 	, insertDocument: insertDocument
 	, updateDocument: updateDocument
+	, fetchRecord: fetchRecord
 	, buildCollectionUrl: buildCollectionUrl
 	, http: require('../util/http-manager')
 };
+
+function initializeEventListener() {
+	var hubConnectionString = config.iothub_connectionString;
+
+	var evtClient = EventHubClient.fromConnectionString(hubConnectionString);
+	evtClient.open()
+		.then(evtClient.getPartitionIds.bind(evtClient))
+		.then(function (partitionIds) {
+			return partitionIds.map(function (partitionId) {
+				return evtClient.createReceiver('$Default', partitionId, { 'startAfterTime' : Date.now() }).then(function(receiver) {
+					console.info('Created Event Hub partition receiver: ' + partitionId);
+					receiver.on('errorReceived', console.error);
+					receiver.on('message', require('../components/geo-event-controller').handleGeoEvent);
+				});
+			});
+		})
+		.catch(console.error);
+
+}
 
 function initializeDB() {
 	getDatabase()
 		.then(() => getCollection(config.collection.devices))
 		.then(() => getCollection(config.collection.events))
 		.then(() => getCollection(config.collection.geoFences))
+		.then(() => getCollection(config.collection.eventLogs))
 		.then(() => console.log('All collections initialized'))
 		.catch((error) => console.error('DB/Collection initialization failed [' + JSON.stringify(error, false, null) + ']'));
 }
@@ -97,7 +120,7 @@ function getCollection(collectionName) {
 
 function queryCollection(collectionName, query, isIterator, callback) {
 	return new Promise((resolve, reject) => {
-		var iterator = client.queryDocuments(buildCollectionUrl(collectionName), query);
+		var iterator = client.queryDocuments(buildCollectionUrl(collectionName), query, {maxItemCount: isIterator || Math.max(10, isIterator)});
 		if (isIterator) {
 			if (callback) {
 				callback(undefined, iterator);
@@ -142,5 +165,20 @@ function updateDocument(document, callback) {
 			}
 			resolve(doc);
 		});
+	});
+}
+
+function fetchRecord(cursor, pageNum, callback) {
+	cursor.executeNext(function(err, nextBatch) {
+		if (err) {
+			return callback(err);
+		}
+		if (pageNum - 1 >= 0) {
+			if (nextBatch.length > 0) {
+				fetchRecord(cursor, pageNum - 1, callback);
+			}
+		} else {
+			return callback(undefined, nextBatch);
+		}
 	});
 }

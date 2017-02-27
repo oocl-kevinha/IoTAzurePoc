@@ -16,6 +16,7 @@ var server = http.createServer(app);
 const mapKey = require('./config/azure-keys').mapKey;
 
 require('./util/common').initializeDB();
+require('./util/common').initializeEventListener();
 
 app.use(cors());
 app.use(bodyParser.json());
