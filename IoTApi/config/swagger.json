@@ -64,7 +64,7 @@
 		},
 		"/IoTEvents/{deviceId}": {
 			"get": {
-				"description": "Retrieve device's events with the deviceId",
+				"description": "Retrieve device's events with the deviceId, sort by descending order",
 				"tags": [
 					"Events"
 				],
@@ -81,6 +81,30 @@
 						"description": "Id of the Device for retrieving the Events",
 						"required": true,
 						"type": "string"
+					},
+					{
+						"name": "pageNum",
+						"in": "query",
+						"description": "Page number, minimum value is 0, used with pageSize to retrieve portion of events",
+						"required": true,
+						"type": "number",
+						"format": "int32"
+					},
+					{
+						"name": "pageSize",
+						"in": "query",
+						"description": "Used with pageNum parameter to retrieve portion of events",
+						"required": true,
+						"type": "number",
+						"format": "int32"
+					},
+					{
+						"name": "timeStamp",
+						"in": "query",
+						"description": "The max date (in millisecond) of events to be retrieved",
+						"required": true,
+						"type": "number",
+						"format": "int32"
 					}
 				],
 				"responses": {
@@ -100,9 +124,18 @@
 									"format": "int32"
 								},
 								"data": {
-									"type": "array",
-									"items": {
-										"$ref": "#/definitions/GPSEvent"
+									"type": "object",
+									"properties": {
+										"count": {
+											"type": "number",
+											"format": "int32"
+										},
+										"events": {
+											"type": "array",
+											"items": {
+												"$ref": "#/definitions/GPSEvent"
+											}
+										}
 									}
 								}
 							}
@@ -520,6 +553,23 @@
 									"type": "string"
 								}
 							}
+						}
+					}
+				},
+				"lastGPSEvent": {
+					"type": "object",
+					"properties": {
+						"timeStamp": {
+							"type": "string",
+							"format": "date-time"
+						},
+						"longitude": {
+							"format": "double",
+							"type": "number"
+						},
+						"latitude": {
+							"format": "double",
+							"type": "number"
 						}
 					}
 				},

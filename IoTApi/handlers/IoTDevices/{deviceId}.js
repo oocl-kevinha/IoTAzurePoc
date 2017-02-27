@@ -26,7 +26,7 @@ function getIoTDevice(req, res) {
 				);
 		}
 		var querySpec = {
-			query: `SELECT TOP 1 d.deviceId, d.activationCode, d.meta FROM ${config.collection.devices} d WHERE d.deviceId = @deviceId`
+			query: `SELECT TOP 1 d.deviceId, d.activationCode, d.lastGPSEvent, d.meta FROM ${config.collection.devices} d WHERE d.deviceId = @deviceId`
 			, parameters: [
 				{ name: '@deviceId', value: deviceId }
 			]
