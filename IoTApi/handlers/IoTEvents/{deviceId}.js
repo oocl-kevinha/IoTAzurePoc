@@ -1,4 +1,5 @@
 'use strict';
+var _ = require('lodash');
 var async = require('async');
 var common = require('../../util/common');
 var config = require('../../config/azure-keys');
@@ -9,9 +10,9 @@ module.exports = {
 };
 
 function queryEventByDeviceId(req, res, next) {
-	var pageNum = parseInt(req.query.pageNum);
+	var rowNum = parseInt(req.query.rowNum);
 	var pageSize = parseInt(req.query.pageSize);
-	var topLimit = (pageNum + 1) * pageSize;
+	var topLimit = rowNum + pageSize + 48000; // each device should have < 48000 gps = 200km/h daily if 100m per point
 
 	async.waterfall(
 		[
@@ -27,7 +28,7 @@ function queryEventByDeviceId(req, res, next) {
 				common.queryCollection(config.collection.events, querySpec, pageSize, callback);
 			}
 			, function(cursor, callback) {
-				common.fetchRecord(cursor, pageNum, callback);
+				fetchRecord(cursor, rowNum, pageSize, [], callback);
 			}
 			, function(fetchedRecords, callback) {
 				var querySpec = {
@@ -52,4 +53,55 @@ function queryEventByDeviceId(req, res, next) {
 			res.json(responseFactory.buildSuccessResponse({ count: count, events: fetchedRecords }));
 		}
 	);
+}
+
+function fetchRecord(cursor, rowToSkip, pageSize, resultHolder, callback) {
+	cursor.executeNext(function(err, nextBatch) {
+		if (err) {
+			return callback(err);
+		}
+
+		if (rowToSkip > nextBatch.length && nextBatch.length == pageSize) {
+			if (nextBatch.length < pageSize) {
+				return callback(undefined, []);
+			} else {
+				fetchRecord(cursor, rowToSkip - pageSize, pageSize, resultHolder, callback);
+			}
+		} else {
+			if (nextBatch.length == pageSize) {
+				if (rowToSkip == 0) {
+					if (resultHolder.length < pageSize) {
+						resultHolder = _.concat(resultHolder, _.takeRight(nextBatch, pageSize - resultHolder.length));
+						fetchRecord(cursor, 0, pageSize, resultHolder, callback);
+					} else {
+						var fetchCompleted = false;
+						var groupDate = resultHolder[resultHolder.length - 1].groupDate;
+
+						for (var n = 0; n < nextBatch.length; n++) {
+							if (nextBatch[n].groupDate === groupDate) {
+								resultHolder.push(nextBatch[n]);
+							} else {
+								fetchCompleted = true;
+								break;
+							}
+						}
+						if (fetchCompleted) {
+							return callback(undefined, resultHolder);
+						} else {
+							fetchRecord(cursor, 0, pageSize, resultHolder, callback);
+						}
+					}
+				} else {
+					resultHolder = _.concat(resultHolder, _.takeRight(nextBatch, pageSize - rowToSkip));
+					fetchRecord(cursor, 0, pageSize, resultHolder, callback);
+				}
+			} else {
+				if (nextBatch.length > rowToSkip) {
+					return callback(undefined, _.takeRight(nextBatch, nextBatch.length - rowToSkip));
+				} else {
+					return callback(undefined, []);
+				}
+			}
+		}
+	});
 }

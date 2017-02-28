@@ -83,9 +83,9 @@
 						"type": "string"
 					},
 					{
-						"name": "pageNum",
+						"name": "rowNum",
 						"in": "query",
-						"description": "Page number, minimum value is 0, used with pageSize to retrieve portion of events",
+						"description": "Retrieve events from (rowNum + 1) to (rowNum + 1 + pageSize)",
 						"required": true,
 						"type": "number",
 						"format": "int32"

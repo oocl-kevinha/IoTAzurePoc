@@ -89,10 +89,12 @@ function getDatabase(database) {
 						}
 						return resolve(created);
 					});
+				} else {
+					return reject(err);
 				}
-				return reject(err);
+			} else {
+				resolve(result);
 			}
-			resolve(result);
 		});
 	});
 }
@@ -176,6 +178,8 @@ function fetchRecord(cursor, pageNum, callback) {
 		if (pageNum - 1 >= 0) {
 			if (nextBatch.length > 0) {
 				fetchRecord(cursor, pageNum - 1, callback);
+			} else {
+				return callback(undefined, []);
 			}
 		} else {
 			return callback(undefined, nextBatch);
