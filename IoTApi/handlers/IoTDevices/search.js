@@ -34,6 +34,9 @@ function searchIoTDevice(req, res, next) {
 			async.each(
 				results
 				, function(result, callback) {
+					if (result.lastGPSEvent) {
+						result.lastGPSEvent.timeStamp = new Date(result.lastGPSEvent.timeStamp).getTime();
+					}
 					deviceEndpoint.retrieveIoTDeviceOnHubById(result.deviceId, req.headers.authorization, function(err, data, response) {
 						if (err) {
 							return callback(err);

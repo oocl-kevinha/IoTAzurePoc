@@ -33,6 +33,11 @@ function getIoTDevice(req, res) {
 		};
 		common.queryCollection(config.collection.devices, querySpec, false)
 			.then((results) => {
+				_.forEach(results, function(result) {
+					if (result.lastGPSEvent) {
+						result.lastGPSEvent.timeStamp = new Date(result.lastGPSEvent.timeStamp).getTime();
+					}
+				});
 				res.json(responseFactory.buildSuccessResponse(results.length > 0? _.merge(data, results[0]): {}));
 			})
 			.catch((error) => {
