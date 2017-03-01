@@ -133,62 +133,9 @@
 										"events": {
 											"type": "array",
 											"items": {
-												"$ref": "#/definitions/GPSEvent"
+												"$ref": "#/definitions/GPSEventWithRoute"
 											}
 										}
-									}
-								}
-							}
-						}
-					}
-				},
-				"deprecated": false
-			}
-		},
-		"/IoTEvents/search": {
-			"post": {
-				"description": "Search IoT Events",
-				"tags": [
-					"Events"
-				],
-				"operationId": "searchIoTEvent",
-				"consumes": [
-					"application/json",
-					"text/json"
-				],
-				"produces": [
-					"application/json",
-					"text/json"
-				],
-				"parameters": [
-					{
-						"name": "searchCondition",
-						"in": "body",
-						"schema": {
-							"$ref": "#/definitions/IoTEventSearchCondition"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"schema": {
-							"type": "object",
-							"required": ["success"],
-							"properties": {
-								"success": {
-									"type": "boolean"
-								},
-								"errMessage": {
-									"type": "string"
-								},
-								"statusCode": {
-									"type": "number",
-									"format": "int32"
-								},
-								"data": {
-									"type": "array",
-									"items": {
-										"$ref": "#/definitions/GPSEvent"
 									}
 								}
 							}
@@ -711,45 +658,15 @@
 				}
 			}
 		},
-		"VendorIoTDevice": {
+		"GPSEventWithRoute": {
 			"type": "object",
 			"properties": {
-				"deviceId": {
-					"type": "string"
-				},
-				"etag": {
-					"type": "string"
-				},
-				"lastUpdated": {
-					"format": "date-time",
-					"type": "string"
-				},
-				"meta": {
-					"type": "array",
-					"items": {
-						"type": "object",
-						"properties": {
-							"key": {
-								"type": "string",
-								"description": "Name of the Meta Field"
-							},
-							"value": {
-								"type": "string",
-								"description": "Value of the Meta Field"
-							}
-						}
-					}
-				}
-			}
-		},
-		"GPSEvent": {
-			"type": "object",
-			"properties": {
-				"routeID": {
+				"routeId": {
 					"type": "string"
 				},
 				"routeFlag": {
-					"type": "string"
+					"type": "number",
+					"format": "int32"
 				},
 				"longitude": {
 					"format": "double",
@@ -783,56 +700,83 @@
 					"format": "double",
 					"type": "number"
 				},
-				"cordinateSystem": {
+				"coordinateSystem": {
 					"type": "string"
 				},
 				"timeStamp": {
-					"format": "date-time",
-					"type": "string"
+					"format": "int32",
+					"type": "number"
 				},
 				"timezone": {
 					"type": "string"
 				},
 				"devicePower": {
+					"type": "string"
+				},
+				"intervalTime": {
+					"type": "string"
+				},
+				"intervalDistance": {
+					"type": "string"
+				}
+			}
+		},
+		"GPSEvent": {
+			"type": "object",
+			"properties": {
+				"routeFlag": {
+					"type": "number",
+					"format": "int32"
+				},
+				"longitude": {
 					"format": "double",
 					"type": "number"
 				},
-				"intervalTime": {
+				"latitude": {
+					"format": "double",
+					"type": "number"
+				},
+				"altitude": {
+					"format": "double",
+					"type": "number"
+				},
+				"hAccuracy": {
+					"format": "double",
+					"type": "number"
+				},
+				"vAccuracy": {
+					"format": "double",
+					"type": "number"
+				},
+				"speed": {
+					"format": "double",
+					"type": "number"
+				},
+				"angle": {
+					"format": "double",
+					"type": "number"
+				},
+				"distance": {
+					"format": "double",
+					"type": "number"
+				},
+				"coordinateSystem": {
+					"type": "string"
+				},
+				"timeStamp": {
 					"format": "int32",
 					"type": "number"
 				},
+				"timezone": {
+					"type": "string"
+				},
+				"devicePower": {
+					"type": "string"
+				},
+				"intervalTime": {
+					"type": "string"
+				},
 				"intervalDistance": {
-					"format": "double",
-					"type": "number"
-				}
-			}
-		},
-		"IoTEvent": {
-			"type": "object",
-			"properties": {
-				"deviceId": {
-					"type": "string"
-				},
-				"windSpeed": {
-					"format": "double",
-					"type": "number"
-				},
-				"EventProcessedUtcTime": {
-					"format": "date-time",
-					"type": "string"
-				},
-				"IoTHub": {
-					"$ref": "#/definitions/IoTHub"
-				}
-			}
-		},
-		"IoTHub": {
-			"type": "object",
-			"properties": {
-				"MessageId": {
-					"type": "string"
-				},
-				"CorrelationId": {
 					"type": "string"
 				}
 			}

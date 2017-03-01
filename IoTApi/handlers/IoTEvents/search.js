@@ -23,7 +23,7 @@ function searchIoTEvent(req, res, next) {
 		}
 	);
 	var querySpec = {
-		query: `SELECT * FROM ${config.collection.events} e WHERE e.hAccuracy <= 500 AND e.hAccuracy > -1` + (whereCondition.length > 0? ' AND (' + _.join(whereCondition, ' OR ') + ')': '') + ' ORDER BY e.timeStamp DESC'
+		query: `SELECT * FROM ${config.collection.events} e WHERE (IS_STRING(e.hAccuracy) OR (e.hAccuracy <= 500 AND e.hAccuracy > -1))` + (whereCondition.length > 0? ' AND (' + _.join(whereCondition, ' OR ') + ')': '') + ' ORDER BY e.timeStamp DESC'
 		, parameters: param
 	};
 

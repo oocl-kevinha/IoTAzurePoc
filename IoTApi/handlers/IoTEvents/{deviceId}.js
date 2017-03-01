@@ -1,6 +1,7 @@
 'use strict';
 var _ = require('lodash');
 var async = require('async');
+var moment = require('moment');
 var common = require('../../util/common');
 var config = require('../../config/azure-keys');
 var responseFactory = require('../../util/response-factory');
@@ -17,11 +18,13 @@ function queryEventByDeviceId(req, res, next) {
 	async.waterfall(
 		[
 			function(callback) {
+				// Intermediate handling both string type and numeric type, field type is not standardized yet
 				var querySpec = {
-					query: `SELECT TOP ${topLimit} * FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND r.hAccuracy <= 500 AND r.hAccuracy > -1 AND r.timeStamp <= @timeStamp ORDER BY r.timeStamp DESC`
+					query: `SELECT TOP ${topLimit} * FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND (IS_STRING(r.hAccuracy) OR (r.hAccuracy <= 500 AND r.hAccuracy > -1)) AND (r.timeStamp <= @strTimeStamp OR r.timeStamp <= @timeStamp) ORDER BY r.timeStamp DESC`
 					, parameters: [
 						{ name: '@deviceId', value: req.params.deviceId }
 						, { name: '@timeStamp', value: req.query.timeStamp }
+						, { name: '@strTimeStamp', value: `${req.query.timeStamp}` }
 					]
 				};
 				// //console.log(querySpec);
@@ -32,7 +35,7 @@ function queryEventByDeviceId(req, res, next) {
 			}
 			, function(fetchedRecords, callback) {
 				var querySpec = {
-					query: `SELECT COUNT(r) COUNT FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND r.hAccuracy <= 500 AND r.hAccuracy > -1`
+					query: `SELECT COUNT(r) COUNT FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND (IS_STRING(r.hAccuracy) OR (r.hAccuracy <= 500 AND r.hAccuracy > -1))`
 					, parameters: [
 						{ name: '@deviceId', value: req.params.deviceId }
 					]
@@ -43,6 +46,45 @@ function queryEventByDeviceId(req, res, next) {
 					}
 					callback(undefined, counts[0]? counts[0].COUNT: 0, fetchedRecords);
 				});
+			}
+			, function(count, fetchedRecords, callback) {
+				if (fetchedRecords.length > 0) {
+					var minDate = parseInt(fetchedRecords[0].timeStamp);
+					var maxDate = parseInt(fetchedRecords[0].timeStamp);
+					_.forEach(fetchedRecords, function(gpsEvent) {
+						gpsEvent.timeStamp = parseInt(gpsEvent.timeStamp);
+						minDate = minDate < gpsEvent.timeStamp? minDate: gpsEvent.timeStamp;
+						maxDate = maxDate > gpsEvent.timeStamp? maxDate: gpsEvent.timeStamp;
+					});
+					var querySpec = {
+						query: `SELECT * FROM ${config.collection.eventLogs} l where l.eventTime >= @minDate AND l.eventTime <= @maxDate ORDER BY l.eventTime DESC`
+						, parameters: [
+							{ name: '@minDate', value: moment(minDate) }
+							, { name: '@maxDate', value: moment(maxDate) }
+						]
+					};
+					common.queryCollection(config.collection.eventLogs, querySpec, false, function(err, routes) {
+						if (err) {
+							return callback(err);
+						}
+						var n = fetchedRecords.length - 1;
+						_.forEach(routes, function(route) {
+							for (; n >= 0; n--) {
+								var routeFrom = moment(route.fromTimestamp);
+								var routeTo = moment(route.toTimestamp);
+								if (moment(fetchedRecords[n].timeStamp).isBefore(routeFrom)) {
+									break;
+								}
+								if (moment(fetchedRecords[n].timeStamp).isBetween(routeFrom, routeTo, null, '[]')) {
+									fetchedRecords[n].routeId = route.eventLogId;
+								}
+							}
+						});
+						return callback(undefined, count, fetchedRecords);
+					});
+				} else {
+					return callback(undefined, count, fetchedRecords);
+				}
 			}
 		]
 		, function(err, count, fetchedRecords) {
