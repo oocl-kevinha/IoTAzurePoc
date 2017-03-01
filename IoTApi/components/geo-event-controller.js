@@ -35,7 +35,7 @@ exports.handleGeoEvent = function(message) {
 			}
 			, function (devices, callback) {
 				if (devices.length > 0) {
-					async.concat(
+					async.concatSeries(
 						geoEvents
 						, function(gpsSignal, eachCallback) {
 							if (gpsSignal.hAccuracy > config.tolerence.H_ACCURACY) {
@@ -71,6 +71,7 @@ exports.handleGeoEvent = function(message) {
 			if (err) {
 				return console.error(err);
 			}
+
 			device.lastRoute = device.lastRoute || {};
 			device.currentRoute = device.currentRoute || {};
 			// async.concat fires query in parallel, sort event by timeStamp order
@@ -85,6 +86,7 @@ exports.handleGeoEvent = function(message) {
 				device.lastGPSEvent = { timeStamp: eventTime, latitude: parseFloat(matchedGeoFence.gps.latitude), longitude: parseFloat(matchedGeoFence.gps.longitude) };
 				// Special handling for first event
 				device.lastGPSTimestamp = device.lastGPSTimestamp || eventTime;
+				device.lastGeoFenceTimestamp = device.lastGeoFenceTimestamp || eventTime;
 				// In middle of route
 				try {
 					if (!matchedGeoFence.geoFence) {
@@ -105,7 +107,7 @@ exports.handleGeoEvent = function(message) {
 							if (device.currentRoute.toLocation) {
 								// B1.4
 								//console.log('Branch B1.4');
-								var stayTimeInToLoc = moment(device.lastGPSTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
+								var stayTimeInToLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
 								if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
 									device.currentRoute.toLocation = undefined;
 									device.currentRoute.toTimestamp = undefined;
@@ -113,7 +115,7 @@ exports.handleGeoEvent = function(message) {
 							} else if (device.currentRoute.fromLocation) {
 								// B1.3
 								//console.log('Branch B1.3');
-								var stayTimeInFromLoc = moment(device.lastGPSTimestamp).diff(device.currentRoute.fromTimestamp, 'minutes');
+								var stayTimeInFromLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.fromTimestamp, 'minutes');
 								if (stayTimeInFromLoc < timeTolerence.ENTER_GEOFENCE) {
 									device.currentRoute.fromLocation = undefined;
 									device.currentRoute.fromTimestamp = undefined;
@@ -149,14 +151,14 @@ exports.handleGeoEvent = function(message) {
 						// A1
 						if (!device.lastRoute.toLocation) {
 							if (device.currentRoute.toLocation) {
-								var stayTimeInToLoc = moment(device.lastGPSTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
+								var stayTimeInToLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
 								if (device.currentRoute.toLocation.geoId === matchedGeoFence.geoFence.geoId) {
 									// A1.1
 									//console.log('Branch A1.1');
 									var stayTimeInMin = eventTime.diff(device.currentRoute.toTimestamp, 'minutes');
 									// Avoid duplicate enter geofence event, create enter geofence event
 									if (stayTimeInMin >= timeTolerence.ENTER_GEOFENCE) {
-										device.lastGeoFenceTimestamp = eventTime;
+										//device.lastGeoFenceTimestamp = eventTime;
 										if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
 											events.push(createGeoFenceEvent(deviceId, eventType.ENTER_GEOFENCE, eventTime, device.currentRoute.toLocation));
 											events.push(createRouteCompletedEvent(deviceId, eventTime, device.currentRoute));
@@ -181,14 +183,14 @@ exports.handleGeoEvent = function(message) {
 									// else: not expected
 								}
 							} else if (device.currentRoute.fromLocation) {
-								var stayTimeInFromLoc = moment(device.lastGPSTimestamp).diff(device.currentRoute.fromTimestamp, 'minutes');
+								var stayTimeInFromLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.fromTimestamp, 'minutes');
 								if (device.currentRoute.fromLocation.geoId === matchedGeoFence.geoFence.geoId) {
 									// A1.1
 									//console.log('Branch A1.1');
 									var stayTimeInMin = eventTime.diff(device.currentRoute.fromTimestamp, 'minutes');
 									// Avoid duplicate enter geofence event, create enter geofence event
 									if (stayTimeInMin >= timeTolerence.ENTER_GEOFENCE) {
-										device.lastGeoFenceTimestamp = eventTime;
+										//device.lastGeoFenceTimestamp = eventTime;
 										if (stayTimeInFromLoc < timeTolerence.ENTER_GEOFENCE) {
 											events.push(createGeoFenceEvent(deviceId, eventType.ENTER_GEOFENCE, eventTime, device.currentRoute.fromLocation));
 										}
@@ -224,15 +226,16 @@ exports.handleGeoEvent = function(message) {
 							}
 						} else {
 							// A2
+							//console.log('Branch A2');
 							if (device.currentRoute.toLocation) {
-								var stayTimeInToLoc = moment(device.lastGPSTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
+								var stayTimeInToLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
 								if (device.currentRoute.toLocation.geoId === matchedGeoFence.geoFence.geoId) {
 									// A2.1
 									//console.log('Branch A2.1');
 									var stayTimeInMin = eventTime.diff(device.currentRoute.toTimestamp, 'minutes');
 									// Avoid duplicate enter geofence event, create enter geofence event
 									if (stayTimeInMin >= timeTolerence.ENTER_GEOFENCE) {
-										device.lastGeoFenceTimestamp = eventTime;
+										//device.lastGeoFenceTimestamp = eventTime;
 										if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
 											events.push(createGeoFenceEvent(deviceId, eventType.ENTER_GEOFENCE, eventTime, device.currentRoute.toLocation));
 											events.push(createRouteCompletedEvent(deviceId, eventTime, device.currentRoute));
@@ -247,7 +250,7 @@ exports.handleGeoEvent = function(message) {
 								} else {
 									// A2.3
 									//console.log('Branch A2.3');
-									if (stayTimeInToLoc < timeTolerence.ENTERGEOFENCE) {
+									if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
 										device.currentRoute.toLocation = {
 											geoId: matchedGeoFence.geoFence.geoId
 											, geoName: matchedGeoFence.geoFence.geoName
@@ -269,16 +272,19 @@ exports.handleGeoEvent = function(message) {
 								// else: not expected
 							}
 						}
+						device.lastGeoFenceTimestamp = eventTime;
 					}
 					device.lastGPSTimestamp = eventTime;
-					//console.log('Current Route:');
-					//console.log(device.currentRoute);
+					//console.log('Last Route: ' + eventTime);
+					//console.log(JSON.stringify(device.lastRoute, false, null));
+					//console.log('Current Route: ' + eventTime);
+					//console.log(JSON.stringify(device.currentRoute, false, null));
 				} catch (ex) {
 					console.error(ex);
 				}
 			});
 			//console.log('Events:');
-			//_.forEach(events, function(event) {console.log(JSON.stringify(event));});
+			//_.forEach(events, function(event) {console.log(JSON.stringify(event, false, null));});
 			async.waterfall(
 				[
 					function(callback) {
@@ -296,7 +302,7 @@ exports.handleGeoEvent = function(message) {
 				]
 				, function(err) {
 					if (err) {
-						console.log(err);
+						console.error(err);
 					}
 				}
 			);
