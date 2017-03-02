@@ -6,6 +6,8 @@ var common = require('../../util/common');
 var config = require('../../config/azure-keys');
 var responseFactory = require('../../util/response-factory');
 
+const eventType = config.eventType;
+
 module.exports = {
 	get: queryEventByDeviceId
 };
@@ -57,10 +59,11 @@ function queryEventByDeviceId(req, res, next) {
 						maxDate = maxDate > gpsEvent.timeStamp? maxDate: gpsEvent.timeStamp;
 					});
 					var querySpec = {
-						query: `SELECT * FROM ${config.collection.eventLogs} l where l.eventTime >= @minDate AND l.eventTime <= @maxDate ORDER BY l.eventTime DESC`
+						query: `SELECT l.eventLogId routeId, l.eventTime, l.fromTimestamp, l.toTimestamp, l.fromLocation, l.toLocation FROM ${config.collection.eventLogs} l where l.eventType = '${config.eventType.ROUTE_COMPLETED}' AND l.deviceId = @deviceId AND l.fromTimestamp <= @maxDate AND l.toTimestamp >= @minDate ORDER BY l.eventTime`
 						, parameters: [
 							{ name: '@minDate', value: moment(minDate) }
 							, { name: '@maxDate', value: moment(maxDate) }
+							, { name: '@deviceId', value: req.params.deviceId }
 						]
 					};
 					common.queryCollection(config.collection.eventLogs, querySpec, false, function(err, routes) {
@@ -72,27 +75,28 @@ function queryEventByDeviceId(req, res, next) {
 							for (; n >= 0; n--) {
 								var routeFrom = moment(route.fromTimestamp);
 								var routeTo = moment(route.toTimestamp);
-								if (moment(fetchedRecords[n].timeStamp).isBefore(routeFrom)) {
+								//console.log(moment(fetchedRecords[n].timeStamp).toISOString() + ' / ' + routeFrom.toISOString() + ' / ' + routeTo.toISOString());
+								if (moment(fetchedRecords[n].timeStamp).isAfter(routeTo)) {
 									break;
 								}
 								if (moment(fetchedRecords[n].timeStamp).isBetween(routeFrom, routeTo, null, '[]')) {
-									fetchedRecords[n].routeId = route.eventLogId;
+									fetchedRecords[n].routeId = route.routeId;
 								}
 							}
 						});
-						return callback(undefined, count, fetchedRecords);
+						return callback(undefined, count, fetchedRecords, routes);
 					});
 				} else {
-					return callback(undefined, count, fetchedRecords);
+					return callback(undefined, count, fetchedRecords, []);
 				}
 			}
 		]
-		, function(err, count, fetchedRecords) {
+		, function(err, count, fetchedRecords, routes) {
 			if (err) {
 				console.error(err);
 				return res.status(500).json(responseFactory.buildFailureResponse(err));
 			}
-			res.json(responseFactory.buildSuccessResponse({ count: count, events: fetchedRecords }));
+			res.json(responseFactory.buildSuccessResponse({ count: count, events: fetchedRecords, routes: routes }));
 		}
 	);
 }

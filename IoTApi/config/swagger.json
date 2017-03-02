@@ -135,6 +135,12 @@
 											"items": {
 												"$ref": "#/definitions/GPSEventWithRoute"
 											}
+										},
+										"routes": {
+											"type": "array",
+											"items": {
+												"$ref": "#/definitions/Route"
+											}
 										}
 									}
 								}
@@ -413,6 +419,106 @@
 				"deprecated": false,
 				"security": [{ "Authorization": [] }]
 			}
+		},
+		"/geo/search/bound": {
+			"post": {
+				"description": "Retrieve geo-fence within specified bound",
+				"tags": [
+					"Geo"
+				],
+				"operationId": "getGeoFenceByBound",
+				"consumes": [
+					"application/json",
+					"text/json"
+				],
+				"produces": [
+					"application/json",
+					"text/json"
+				],
+				"parameters": [
+					{
+						"name": "bounds",
+						"in": "body",
+						"description": "The four corners of the area in form of [lng, lat]",
+						"schema": {
+							"$ref": "#/definitions/GeoBound"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"schema": {
+							"type": "object",
+							"required": ["success"],
+							"properties": {
+								"success": {
+									"type": "boolean"
+								},
+								"errMessage": {
+									"type": "string"
+								},
+								"statusCode": {
+									"type": "number",
+									"format": "int32"
+								},
+								"data": {
+									"$ref": "#/definitions/GeoFence"
+								}
+							}
+						}
+					}
+				},
+				"deprecated": false
+			}
+		},
+		"/geo/{geoId}": {
+			"get": {
+				"description": "Retrieve geo-fence using Id, using &lt;comma&gt; to separate multiple Ids",
+				"tags": [
+					"Geo"
+				],
+				"operationId": "getGeoFenceByIds",
+				"consumes": [
+					"application/json",
+					"text/json"
+				],
+				"produces": [
+					"application/json",
+					"text/json"
+				],
+				"parameters": [
+					{
+						"name": "geoId",
+						"in": "path",
+						"description": "Id or Ids separated by &lt;comma&gt; for retrieving geo fence definitions",
+						"type": "string"
+					}
+				],
+				"responses": {
+					"200": {
+						"schema": {
+							"type": "object",
+							"required": ["success"],
+							"properties": {
+								"success": {
+									"type": "boolean"
+								},
+								"errMessage": {
+									"type": "string"
+								},
+								"statusCode": {
+									"type": "number",
+									"format": "int32"
+								},
+								"data": {
+									"$ref": "#/definitions/GeoFence"
+								}
+							}
+						}
+					}
+				},
+				"deprecated": false
+			}
 		}
 	},
 	"definitions": {
@@ -440,6 +546,57 @@
 			"properties": {
 				"token": {
 					"type": "string"
+				}
+			}
+		},
+		"GeoBound": {
+			"type": "array",
+			"minItems": 4,
+			"maxItems": 4,
+			"default": [[0, 0], [10, 0], [10, 10], [0, 10]],
+			"items": {
+				"type": "array",
+				"minItems": 2,
+				"maxItems": 2,
+				"items": {
+					"type": "number",
+					"format": "double"
+				}
+			}
+		},
+		"GeoFence": {
+			"type": "object",
+			"properties": {
+				"geoId": {
+					"type": "string"
+				},
+				"geoName": {
+					"type": "string"
+				},
+				"geoType": {
+					"type": "string",
+					"enum": ["polygon", "circle"]
+				},
+				"coords": {
+					"type": "object",
+					"properties": {
+						"type": {
+							"type": "string",
+							"enum": ["Polygon", "Point"]
+						},
+						"coordinates": {
+							"type": "array",
+							"description": "1D array containing lng, lat for Point and 2D array containing array of [lng, lat] for Polygon",
+							"items": {
+								"type": "object"
+							}
+						}
+					}
+				},
+				"radiusInMetre": {
+					"type": "number",
+					"format": "double",
+					"description": "For circle geofence only"
 				}
 			}
 		},
@@ -717,6 +874,43 @@
 					"type": "string"
 				},
 				"intervalDistance": {
+					"type": "string"
+				}
+			}
+		},
+		"Route": {
+			"type": "object",
+			"properties": {
+				"routeId": {
+					"type": "string"
+				},
+				"eventTime": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"fromTimestamp": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"toTimestamp": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"fromLocation": {
+					"$ref": "#/definitions/GeoLocation"
+				},
+				"toLocation": {
+					"$ref": "#/definitions/GeoLocation"
+				}
+			}
+		},
+		"GeoLocation": {
+			"type": "object",
+			"properties": {
+				"geoId": {
+					"type": "string"
+				},
+				"geoName": {
 					"type": "string"
 				}
 			}

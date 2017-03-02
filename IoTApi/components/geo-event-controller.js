@@ -7,11 +7,7 @@ var common = require('../util/common');
 
 const timeTolerence = config.tolerence.timeTolerence;
 
-const eventType = {
-	ENTER_GEOFENCE: 'enter_geofence'
-	, EXIT_GEOFENCE: 'exit_geofence'
-	, ROUTE_COMPLETED: 'route_completed'
-};
+const eventType = config.eventType;
 
 exports.handleGeoEvent = function(message) {
 	var deviceId = message.systemProperties['iothub-connection-device-id'];
@@ -38,7 +34,7 @@ exports.handleGeoEvent = function(message) {
 					async.concatSeries(
 						geoEvents
 						, function(gpsSignal, eachCallback) {
-							if (gpsSignal.hAccuracy > config.tolerence.H_ACCURACY) {
+							if (gpsSignal.hAccuracy > config.tolerence.H_ACCURACY || gpsSignal.hAccuracy < 0) {
 								return eachCallback(undefined);
 							}
 							var coords = JSON.stringify({ type: 'Point', coordinates: [parseFloat(gpsSignal.longitude), parseFloat(gpsSignal.latitude)] });
@@ -53,7 +49,7 @@ exports.handleGeoEvent = function(message) {
 									if (err) {
 										return eachCallback(err);
 									}
-									//console.log('Matched Location: ' + JSON.stringify(docs));
+									// console.log('Matched Location: ' + JSON.stringify(docs));
 									eachCallback(undefined, { gps: gpsSignal, geoFence: docs[0] });
 								}
 							);
@@ -89,6 +85,7 @@ exports.handleGeoEvent = function(message) {
 				device.lastGeoFenceTimestamp = device.lastGeoFenceTimestamp || eventTime;
 				// In middle of route
 				try {
+					//console.log(matchedGeoFence.geoFence);
 					if (!matchedGeoFence.geoFence) {
 						//console.log('Branch B');
 						/**

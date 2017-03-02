@@ -4,31 +4,32 @@ var uuid = require('uuid');
 var config = require('../config/azure-keys.js');
 var common = require('../util/common');
 var responseFactory = require('../util/response-factory');
+var shapeUtil = require('../util/shape-util');
 
-exports.getGeoFenceInBound = function(req, res) {
-	convertPolygonToClockwise({ coords: { coordinates: req.body } });
-	
-	var coordStr = JSON.stringify({ type: 'Polygon', coordinates: [req.body] }, false, null);
-	var result = [];
-	// Document DB Client not support binding Object parameter
-	var queryCircle = `SELECT g.geoId, g.geoName, g.geoType, g.coords, g.radiusInMetre, g.createdAt FROM ${config.collection.geoFences} g WHERE ST_INTERSECTS(`
-				+ coordStr
-				+ ', g.coords) AND g.isDeleted != \'T\' ORDER BY g.geoName';
-	var queryPolygon = `SELECT g.geoId, g.geoName, g.geoType, g.coords, g.radiusInMetre, g.createdAt FROM ${config.collection.geoFences} g JOIN cc in g.coords.coordinates[0] WHERE ST_WITHIN({type: 'Point', coordinates: cc}, `
-				+ coordStr
-				+ ') AND g.isDeleted != \'T\' ORDER BY g.geoName';
-	common.queryCollection(config.collection.geoFences, queryCircle)
-		.then((circleResult) => {
-			result = circleResult;
-			return common.queryCollection(config.collection.geoFences, queryPolygon);
-		}).then((polygonResult) => {
-			res.json(responseFactory.buildSuccessResponse(_.uniqBy(_.concat(result, polygonResult), 'geoId')));
-		})
-		.catch((err) => {
-			console.error(err);
-			res.status(500).json(responseFactory.buildFailureResponse(error));
-		});
-};
+// exports.getGeoFenceInBound = function(req, res) {
+// 	convertPolygonToClockwise({ coords: { coordinates: req.body } });
+//
+// 	var coordStr = JSON.stringify({ type: 'Polygon', coordinates: [req.body] }, false, null);
+// 	var result = [];
+// 	// Document DB Client not support binding Object parameter
+// 	var queryCircle = `SELECT g.geoId, g.geoName, g.geoType, g.coords, g.radiusInMetre, g.createdAt FROM ${config.collection.geoFences} g WHERE ST_INTERSECTS(`
+// 				+ coordStr
+// 				+ ', g.coords) AND g.isDeleted != \'T\' ORDER BY g.geoName';
+// 	var queryPolygon = `SELECT g.geoId, g.geoName, g.geoType, g.coords, g.radiusInMetre, g.createdAt FROM ${config.collection.geoFences} g JOIN cc in g.coords.coordinates[0] WHERE ST_WITHIN({type: 'Point', coordinates: cc}, `
+// 				+ coordStr
+// 				+ ') AND g.isDeleted != \'T\' ORDER BY g.geoName';
+// 	common.queryCollection(config.collection.geoFences, queryCircle)
+// 		.then((circleResult) => {
+// 			result = circleResult;
+// 			return common.queryCollection(config.collection.geoFences, queryPolygon);
+// 		}).then((polygonResult) => {
+// 			res.json(responseFactory.buildSuccessResponse(_.uniqBy(_.concat(result, polygonResult), 'geoId')));
+// 		})
+// 		.catch((err) => {
+// 			console.error(err);
+// 			res.status(500).json(responseFactory.buildFailureResponse(error));
+// 		});
+// };
 
 exports.deleteGeoFence = function(req, res) {
 	var querySpec = {
@@ -87,7 +88,7 @@ exports.createGeoFenceLocations = function(req, res) {
 		return res.status(400).json(responseFactory.buildFailureResponse('Invalid Shape', 400));
 	}
 
-	_.forEach(geoFences, convertPolygonToClockwise);
+	_.forEach(geoFences, shapeUtil.convertPolygonToClockwise);
 
 	async.concat(
 		geoFences
@@ -105,37 +106,6 @@ exports.createGeoFenceLocations = function(req, res) {
 		}
 	);
 };
-
-// Document DB only support anti-clockwise Polygon coordinates, clockwise implies exclusion
-// http://stackoverflow.com/questions/1165647/how-to-determine-if-a-list-of-polygon-points-are-in-clockwise-order
-// https://en.wikipedia.org/wiki/Shoelace_formula
-function convertPolygonToClockwise(shape) {
-	if (shape.geoType === 'circle') { return; }
-
-	if (isPolygonClockwise(shape.coords.coordinates)) {
-		_.reverse(shape.coords.coordinates);
-	}
-	shape.coords.coordinates.push(_.cloneDeep(shape.coords.coordinates[0]));
-	shape.coords.coordinates = [shape.coords.coordinates];
-}
-
-function isPolygonClockwise(coordinates) {
-	var signedArea = 0;
-	var x1, y1, x2, y2;
-	for (var n = 0; n < coordinates.length; n++) {
-		x1 = coordinates[n][0];
-		y1 = coordinates[n][1];
-		if (n == coordinates.length - 1) {
-			x2 = coordinates[0][0];
-			y2 = coordinates[0][1];
-		} else {
-			x2 = coordinates[n+1][0];
-			y2 = coordinates[n+1][1];
-		}
-		signedArea += (x1 * y2 - x2 * y1);
-	}
-	return signedArea < 0;
-}
 
 // TODO Validation
 function validateShape() {
