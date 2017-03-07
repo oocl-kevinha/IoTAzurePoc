@@ -15,19 +15,25 @@ var config = {
 
 var path = {
 	libRoots: [`./public/js/lib/`]
-	, jsComponent: _.map(['common'], function(srcPath) { return `./public/js/${srcPath}/`; })
+	, jsComponent: _.map(['common', 'map/google', 'map/osm'], function(srcPath) { return `./public/js/${srcPath}/`; })
 	, jsDist: `./public/js/dist/`
 	, cssSource: [`./public/css/common/`]
 
 	, cssDist: `./public/css/dist/`
 };
 
+var jsEntry = _.map(['google', 'osm'], function(srcPath) {
+	return {
+		name: `${srcPath}/main-component`, file: [`./public/js/map/${srcPath}/*.js`]
+	};
+});
+jsEntry.push({ name: 'common-components', file: ['./public/js/common/*.js']});
+
 var cssEntry = {
 	name: 'lib-css'
 	, file: _.map(path.cssSource, function(cssPath) { return `${cssPath}*.css`; })
 };
 
-var jsEntry = _.map(['common'], function(srcPath) { return { name: `${srcPath}-components`, file: [`./public/js/${srcPath}/*.js`]}; });
 
 gulp.task('default', ['dist-js', 'dist-css']);
 

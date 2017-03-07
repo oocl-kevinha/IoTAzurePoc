@@ -13,8 +13,15 @@
 		<script src="/bower/bootstrap-table/dist/bootstrap-table.min.js"></script>
 		<script src="/bower/vue/dist/vue.min.js"></script>
 		<script src="/bower/lodash/dist/lodash.min.js"></script>
-		<script src="https://maps.googleapis.com/maps/api/js?key=<%= mapKey %>&libraries=drawing,places&callback=initMap" async defer></script>
 		<script src="/js/dist/common-components.min.js"></script>
+		<% if (isGoogleMap) { %>
+		<script src="https://maps.googleapis.com/maps/api/js?key=<%= mapKey %>&libraries=drawing,places&callback=initMap" async defer></script>
+		<script src="/js/dist/google/main-component.min.js"></script>
+		<% } else { %>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
+		<script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
+		<script src="/js/dist/osm/main-component.min.js" defer></script>
+		<% } %>
 	</head>
 	<body>
 		<div id="map" class="col-md-6"></div>

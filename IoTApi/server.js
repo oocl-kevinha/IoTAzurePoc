@@ -16,10 +16,10 @@ var server = http.createServer(app);
 const mapKey = require('./config/azure-keys').mapKey;
 
 require('./util/common').initializeDB();
-require('./util/common').initializeEventListener();
+//require('./util/common').initializeEventListener();
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit: '50mb'}));
 app.use(function(req, res, next) {
 	res.setHeader('Access-Control-Allow-Origin', '*');
 	next();
@@ -41,7 +41,7 @@ app.use(require('./components/geo-route'));
 
 app.use('/dashboard', function(req, res) {
 	// absolute path as view directory appears to be over-written by swaggerize
-	res.render(__dirname + '/public/view/geo-fencing-tool.ejs', { mapKey: mapKey });
+	res.render(__dirname + '/public/view/geo-fencing-tool.ejs', { mapKey: mapKey, isGoogleMap: req.query.osm? false: true });
 });
 
 app.use(swaggerize({

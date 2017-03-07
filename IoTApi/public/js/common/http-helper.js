@@ -1,6 +1,6 @@
 (function($) {
 	function sendRequest(method, path, param, success, failure) {
-		$.ajax(
+		return $.ajax(
 			{
 				async: true
 				, url: path
@@ -13,6 +13,9 @@
 					}
 				}
 				, error: function(xhr, textStatus, httpStatusString) {
+					if (textStatus === 'abort' || httpStatusString === 'abort') {
+						return;
+					}
 					// Handle Unknown Error
 					if (!xhr.responseJSON || xhr.status === 500) {
 						$.dialog.error('Unknown error occured when communicating with server, please contact support!');
@@ -43,15 +46,15 @@
 	}
 	$.httpHelper = $.httpHelper || {};
 	$.httpHelper.sendGet = function(path, success, failure) {
-		sendRequest('GET', path, undefined, success, failure);
+		return sendRequest('GET', path, undefined, success, failure);
 	};
 	$.httpHelper.sendPost = function(path, param, success, failure) {
-		sendRequest('POST', path, param, success, failure);
+		return sendRequest('POST', path, param, success, failure);
 	};
 	$.httpHelper.sendPut = function(path, param, success, failure) {
-		sendRequest('PUT', path, param, success, failure);
+		return sendRequest('PUT', path, param, success, failure);
 	};
 	$.httpHelper.sendDelete = function(path, success, failure) {
-		sendRequest('DELETE', path, undefined, success, failure);
+		return sendRequest('DELETE', path, undefined, success, failure);
 	};
 })(jQuery);

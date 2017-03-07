@@ -9,6 +9,7 @@ function initMap() {
 			var map = new google.maps.Map(document.getElementById('map'), {
 				center: {lat: -34.397, lng: 150.644}
 				, zoom: 8
+				//, minZoom: 8
 			});
 			var drawingManager = new google.maps.drawing.DrawingManager({
 				drawingMode: google.maps.drawing.OverlayType.POLYGON
@@ -270,6 +271,10 @@ function initMap() {
 			}
 			, loadGeoFenceInBound: function() {
 				var self = this;
+				// Avoid multiple load at the same time
+				if (self.$get('gfXhr')) {
+					self.$get('gfXhr').abort();
+				}
 				var latLngBounds = self.$get('map').getBounds().toJSON();
 				var boundArea = [
 					[latLngBounds.west, latLngBounds.north]
@@ -279,7 +284,7 @@ function initMap() {
 				];
 				// _.forEach(self.shapes, function(shape) { shape.shapeRef.setMap(null); });
 				// self.$set('shapes', []);
-				$.httpHelper.sendPost(
+				var xhr = $.httpHelper.sendPost(
 					'/geo/search/bound'
 					, boundArea
 					, function(responseData, status) {
@@ -314,6 +319,7 @@ function initMap() {
 						$('#geoFenceTable').bootstrapTable('load', responseData.data);
 					}
 				);
+				self.$set('gfXhr', xhr);
 			}
 		}
 	});
