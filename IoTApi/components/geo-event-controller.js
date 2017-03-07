@@ -31,6 +31,7 @@ exports.handleGeoEvent = function(message) {
 			}
 			, function (devices, callback) {
 				if (devices.length > 0) {
+					// async.concat(
 					async.concatSeries(
 						geoEvents
 						, function(gpsSignal, eachCallback) {
@@ -38,7 +39,7 @@ exports.handleGeoEvent = function(message) {
 								return eachCallback(undefined);
 							}
 							var coords = JSON.stringify({ type: 'Point', coordinates: [parseFloat(gpsSignal.longitude), parseFloat(gpsSignal.latitude)] });
-							//console.log(`SELECT TOP 1 g.geoId, g.geoName FROM ${config.collection.geoFences} g WHERE g.isDeleted != 'T' AND (ST_WITHIN(${coords}, g.coords)` + ` OR ST_DISTANCE(${coords}, g.coords) < g.radiusInMetre)`);
+							// console.log(`SELECT TOP 1 g.geoId, g.geoName FROM ${config.collection.geoFences} g WHERE g.isDeleted != 'T' AND (ST_WITHIN(${coords}, g.coords)` + ` OR ST_DISTANCE(${coords}, g.coords) < g.radiusInMetre)`);
 							common.queryCollection(
 								config.collection.geoFences
 								// No overlap area handling yet, assume only single polygon at a time
@@ -70,7 +71,7 @@ exports.handleGeoEvent = function(message) {
 
 			device.lastRoute = device.lastRoute || {};
 			device.currentRoute = device.currentRoute || {};
-			// async.concat fires query in parallel, sort event by timeStamp order
+			// async.concat fires query in parallel (potential over quota rate in query), sort event by timeStamp order
 			var sorted = _.sortBy(matchedGeoFences, 'gps.timeStamp');
 			var events = [];
 			_.forEach(sorted, function(matchedGeoFence) {
@@ -79,7 +80,7 @@ exports.handleGeoEvent = function(message) {
 					return;
 				}
 				var eventTime = moment(parseInt(matchedGeoFence.gps.timeStamp));
-				device.lastGPSEvent = { timeStamp: eventTime, latitude: parseFloat(matchedGeoFence.gps.latitude), longitude: parseFloat(matchedGeoFence.gps.longitude) };
+				device.lastGPSEvent = { timeStamp: eventTime, latitude: parseFloat(matchedGeoFence.gps.latitude), longitude: parseFloat(matchedGeoFence.gps.longitude), timezone: matchedGeoFence.gps.timezone };
 				// Special handling for first event
 				device.lastGPSTimestamp = device.lastGPSTimestamp || eventTime;
 				device.lastGeoFenceTimestamp = device.lastGeoFenceTimestamp || eventTime;
@@ -96,7 +97,7 @@ exports.handleGeoEvent = function(message) {
 						 *	1.3. From location exists, not stay long enough, erase fromLocation (previous fromLocation just passing through)
 						 *	1.4. To location exists, not stay long enough, erase toLocation (previous toLocation is just passing through)
 						 *	2. Last route exists => from location (must) exists
-						 *	2.1. Last geofence timestamp equals equals last gps timestamp, i.e. last gps within geofence, set fromTimestamp to gps signal time, fire exit geo fence event
+						 *	2.1. Last geofence timestamp equals last gps timestamp, i.e. last gps within geofence, set fromTimestamp to gps signal time, fire exit geo fence event
 						**/
 						if (!device.lastRoute.toLocation) {
 							// B1
@@ -122,9 +123,13 @@ exports.handleGeoEvent = function(message) {
 						} else {
 							// B2
 							//console.log('Branch B2');
-							if (device.lastGPSTimestamp === device.lastGeoFenceTimestamp) {
+							var stayTimeInLastLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp || device.currentRoute.fromTimestamp, 'minutes');
+							//console.log(device.lastGPSTimestamp + ' : ' + device.lastGeoFenceTimestamp);
+							if (device.lastGPSTimestamp === device.lastGeoFenceTimestamp
+									&& stayTimeInLastLoc < timeTolerence.ENTER_GEOFENCE
+									&& eventTime.diff(device.currentRoute.toTimestamp || device.currentRoute.fromTimestamp, 'minutes') >= timeTolerence.ENTER_GEOFENCE) {
 								// B2.1
-								//console.log('Branch B.1');
+								//console.log('Branch B2.1');
 								device.currentRoute.fromTimestamp = eventTime;
 								events.push(createGeoFenceEvent(deviceId, eventType.EXIT_GEOFENCE, eventTime, device.currentRoute.fromLocation));
 							}

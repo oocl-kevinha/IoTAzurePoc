@@ -674,6 +674,9 @@
 						"latitude": {
 							"format": "double",
 							"type": "number"
+						},
+						"timezone": {
+							"type": "string"
 						}
 					}
 				},

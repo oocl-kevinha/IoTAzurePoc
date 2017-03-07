@@ -122,7 +122,7 @@ function getCollection(collectionName) {
 
 function queryCollection(collectionName, query, isIterator, callback) {
 	return new Promise((resolve, reject) => {
-		var iterator = client.queryDocuments(buildCollectionUrl(collectionName), query, {maxItemCount: isIterator || Math.max(10, isIterator)});
+		var iterator = client.queryDocuments(buildCollectionUrl(collectionName), query, {maxItemCount: isIterator || Math.max(100, isIterator)});
 		if (isIterator) {
 			if (callback) {
 				callback(undefined, iterator);

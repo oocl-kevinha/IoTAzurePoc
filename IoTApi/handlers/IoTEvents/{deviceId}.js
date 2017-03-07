@@ -22,11 +22,10 @@ function queryEventByDeviceId(req, res, next) {
 			function(callback) {
 				// Intermediate handling both string type and numeric type, field type is not standardized yet
 				var querySpec = {
-					query: `SELECT TOP ${topLimit} * FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND (IS_STRING(r.hAccuracy) OR (r.hAccuracy <= 500 AND r.hAccuracy > -1)) AND (r.timeStamp <= @strTimeStamp OR r.timeStamp <= @timeStamp) ORDER BY r.timeStamp DESC`
+					query: `SELECT TOP ${topLimit} * FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND r.hAccuracy <= 500 AND r.hAccuracy > -1 AND r.timeStamp <= @timeStamp ORDER BY r.timeStamp DESC`
 					, parameters: [
 						{ name: '@deviceId', value: req.params.deviceId }
 						, { name: '@timeStamp', value: req.query.timeStamp }
-						, { name: '@strTimeStamp', value: `${req.query.timeStamp}` }
 					]
 				};
 				// //console.log(querySpec);
@@ -37,7 +36,7 @@ function queryEventByDeviceId(req, res, next) {
 			}
 			, function(fetchedRecords, callback) {
 				var querySpec = {
-					query: `SELECT COUNT(r) COUNT FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND (IS_STRING(r.hAccuracy) OR (r.hAccuracy <= 500 AND r.hAccuracy > -1))`
+					query: `SELECT COUNT(r) COUNT FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND r.hAccuracy <= 500 AND r.hAccuracy > -1`
 					, parameters: [
 						{ name: '@deviceId', value: req.params.deviceId }
 					]
@@ -108,26 +107,44 @@ function fetchRecord(cursor, rowToSkip, pageSize, resultHolder, callback) {
 			return callback(err);
 		}
 
-		if (rowToSkip > nextBatch.length && nextBatch.length == pageSize) {
+		if (rowToSkip >= nextBatch.length) {
 			//console.log('A');
-			if (nextBatch.length < pageSize) {
+			if (nextBatch.length == pageSize) {
 				//console.log('A1.1');
-				return callback(undefined, []);
+				fetchRecord(cursor, rowToSkip - pageSize, pageSize, resultHolder, callback);
 			} else {
 				//console.log('A1.2');
-				fetchRecord(cursor, rowToSkip - pageSize, pageSize, resultHolder, callback);
+				return callback(undefined, []);
 			}
 		} else {
 			//console.log('B');
 			if (nextBatch.length == pageSize) {
+				// Full page
 				//console.log('B1');
 				if (rowToSkip == 0) {
 					//console.log('B1.1');
 					if (resultHolder.length < pageSize) {
 						//console.log('B1.1.1');
-						resultHolder = _.concat(resultHolder, _.takeRight(nextBatch, pageSize - resultHolder.length));
-						fetchRecord(cursor, 0, pageSize, resultHolder, callback);
+						var startIdx = pageSize - resultHolder.length;
+						resultHolder = _.concat(resultHolder, _.take(nextBatch, startIdx));
+						var fetchCompleted = false;
+						var groupDate = resultHolder[resultHolder.length - 1].groupDate;
+
+						for (var n = startIdx; n < nextBatch.length; n++) {
+							if (nextBatch[n].groupDate === groupDate) {
+								resultHolder.push(nextBatch[n]);
+							} else {
+								fetchCompleted = true;
+								break;
+							}
+						}
+						if (fetchCompleted) {
+							return callback(undefined, resultHolder);
+						} else {
+							fetchRecord(cursor, 0, pageSize, resultHolder, callback);
+						}
 					} else {
+						// Extract remaining row of same day
 						//console.log('B1.1.2');
 						var fetchCompleted = false;
 						var groupDate = resultHolder[resultHolder.length - 1].groupDate;
@@ -152,6 +169,7 @@ function fetchRecord(cursor, rowToSkip, pageSize, resultHolder, callback) {
 					fetchRecord(cursor, 0, pageSize, resultHolder, callback);
 				}
 			} else {
+				// Last page
 				//console.log('B2');
 				if (nextBatch.length > rowToSkip) {
 					//console.log('B2.1');
@@ -165,3 +183,69 @@ function fetchRecord(cursor, rowToSkip, pageSize, resultHolder, callback) {
 		}
 	});
 }
+
+
+// function fetchRecord(cursor, rowToSkip, pageSize, resultHolder, callback) {
+// 	//console.log('fetchRecord');
+// 	cursor.executeNext(function(err, nextBatch) {
+// 		if (err) {
+// 			return callback(err);
+// 		}
+//
+// 		if (rowToSkip >= nextBatch.length && nextBatch.length == pageSize) {
+// 			//console.log('A');
+// 			if (nextBatch.length < pageSize) {
+// 				//console.log('A1.1');
+// 				return callback(undefined, []);
+// 			} else {
+// 				//console.log('A1.2');
+// 				fetchRecord(cursor, rowToSkip - pageSize, pageSize, resultHolder, callback);
+// 			}
+// 		} else {
+// 			//console.log('B');
+// 			if (nextBatch.length == pageSize) {
+// 				//console.log('B1');
+// 				if (rowToSkip == 0) {
+// 					//console.log('B1.1');
+// 					if (resultHolder.length < pageSize) {
+// 						//console.log('B1.1.1');
+// 						resultHolder = _.concat(resultHolder, _.takeRight(nextBatch, pageSize - resultHolder.length));
+// 						fetchRecord(cursor, 0, pageSize, resultHolder, callback);
+// 					} else {
+// 						//console.log('B1.1.2');
+// 						var fetchCompleted = false;
+// 						var groupDate = resultHolder[resultHolder.length - 1].groupDate;
+//
+// 						for (var n = 0; n < nextBatch.length; n++) {
+// 							if (nextBatch[n].groupDate === groupDate) {
+// 								resultHolder.push(nextBatch[n]);
+// 							} else {
+// 								fetchCompleted = true;
+// 								break;
+// 							}
+// 						}
+// 						if (fetchCompleted) {
+// 							return callback(undefined, resultHolder);
+// 						} else {
+// 							fetchRecord(cursor, 0, pageSize, resultHolder, callback);
+// 						}
+// 					}
+// 				} else {
+// 					//console.log('B1.2');
+// 					resultHolder = _.concat(resultHolder, _.takeRight(nextBatch, pageSize - rowToSkip));
+// 					fetchRecord(cursor, 0, pageSize, resultHolder, callback);
+// 				}
+// 			} else {
+// 				//console.log('B2');
+// 				if (nextBatch.length > rowToSkip) {
+// 					//console.log('B2.1');
+// 					resultHolder = _.concat(resultHolder, _.takeRight(nextBatch, nextBatch.length - rowToSkip));
+// 					return callback(undefined, resultHolder);
+// 				} else {
+// 					//console.log('B2.2');
+// 					return callback(undefined, []);
+// 				}
+// 			}
+// 		}
+// 	});
+// }
