@@ -19,6 +19,7 @@ exports.handleGeoEvent = function(message) {
 	// _.forEach(geoEvents, function(gpsSignal) {
 	// 	//console.log(JSON.stringify(gpsSignal));
 	// });
+	// return;
 
 	async.waterfall(
 		[
@@ -31,9 +32,11 @@ exports.handleGeoEvent = function(message) {
 			}
 			, function (devices, callback) {
 				if (devices.length > 0) {
-					// async.concat(
 					async.concatSeries(
+					// var c = 0;
+					// async.mapLimit(
 						geoEvents
+						// , 2
 						, function(gpsSignal, eachCallback) {
 							if (gpsSignal.hAccuracy > config.tolerence.H_ACCURACY || gpsSignal.hAccuracy < 0) {
 								return eachCallback(undefined);
@@ -50,6 +53,7 @@ exports.handleGeoEvent = function(message) {
 									if (err) {
 										return eachCallback(err);
 									}
+									// console.log(c++);
 									// console.log('Matched Location: ' + JSON.stringify(docs));
 									eachCallback(undefined, { gps: gpsSignal, geoFence: docs[0] });
 								}
@@ -97,7 +101,8 @@ exports.handleGeoEvent = function(message) {
 						 *	1.3. From location exists, not stay long enough, erase fromLocation (previous fromLocation just passing through)
 						 *	1.4. To location exists, not stay long enough, erase toLocation (previous toLocation is just passing through)
 						 *	2. Last route exists => from location (must) exists
-						 *	2.1. Last geofence timestamp equals last gps timestamp, i.e. last gps within geofence, set fromTimestamp to gps signal time, fire exit geo fence event
+						 *	2.1. Last geofence timestamp equals last gps timestamp, to location not exists, i.e. last gps within geofence, set fromTimestamp to gps signal time, fire exit geo fence event
+						 *	2.2. Last geofence timestamp equals last gps timestamp, to location exists, i.e. pass through, remove potential to location
 						**/
 						if (!device.lastRoute.toLocation) {
 							// B1
@@ -105,33 +110,48 @@ exports.handleGeoEvent = function(message) {
 							if (device.currentRoute.toLocation) {
 								// B1.4
 								//console.log('Branch B1.4');
-								var stayTimeInToLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
-								if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
+								// var stayTimeInToLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
+								if (!device.currentRoute.enteredTo) {
+								//if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
 									device.currentRoute.toLocation = undefined;
 									device.currentRoute.toTimestamp = undefined;
 								}
 							} else if (device.currentRoute.fromLocation) {
 								// B1.3
 								//console.log('Branch B1.3');
-								var stayTimeInFromLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.fromTimestamp, 'minutes');
-								if (stayTimeInFromLoc < timeTolerence.ENTER_GEOFENCE) {
+								// var stayTimeInFromLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.fromTimestamp, 'minutes');
+								// if (stayTimeInFromLoc < timeTolerence.ENTER_GEOFENCE) {
+								if (!device.currentRoute.enteredFrom) {
 									device.currentRoute.fromLocation = undefined;
 									device.currentRoute.fromTimestamp = undefined;
+								} else if (device.lastGPSTimestamp === device.lastGeoFenceTimestamp) {
+									// Just exited geo fence, mark route start time as last geo fence point
+									device.currentRoute.fromTimestamp = device.lastGeoFenceTimestamp;
+									events.push(createGeoFenceEvent(deviceId, eventType.EXIT_GEOFENCE, eventTime, device.currentRoute.fromLocation));
 								}
 							}
 							// else: B1.1, B1.2
 						} else {
 							// B2
 							//console.log('Branch B2');
-							var stayTimeInLastLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp || device.currentRoute.fromTimestamp, 'minutes');
-							//console.log(device.lastGPSTimestamp + ' : ' + device.lastGeoFenceTimestamp);
-							if (device.lastGPSTimestamp === device.lastGeoFenceTimestamp
-									&& stayTimeInLastLoc < timeTolerence.ENTER_GEOFENCE
-									&& eventTime.diff(device.currentRoute.toTimestamp || device.currentRoute.fromTimestamp, 'minutes') >= timeTolerence.ENTER_GEOFENCE) {
-								// B2.1
-								//console.log('Branch B2.1');
-								device.currentRoute.fromTimestamp = eventTime;
-								events.push(createGeoFenceEvent(deviceId, eventType.EXIT_GEOFENCE, eventTime, device.currentRoute.fromLocation));
+							// var stayTimeInLastLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp || device.currentRoute.fromTimestamp, 'minutes');
+							// if (device.lastGPSTimestamp === device.lastGeoFenceTimestamp
+							// 		&& stayTimeInLastLoc < timeTolerence.ENTER_GEOFENCE
+							// 		&& eventTime.diff(device.currentRoute.toTimestamp || device.currentRoute.fromTimestamp, 'minutes') >= timeTolerence.ENTER_GEOFENCE) {
+
+							// Should not have case where current route entered to location as rolled to last route once confirmed
+							if (device.lastGPSTimestamp === device.lastGeoFenceTimestamp) {
+								if (device.currentRoute.toLocation && !device.currentRoute.enteredTo) {
+									// B2.2
+									//console.log('Branch B2.2');
+									device.currentRoute.toLocation = undefined;
+									device.currentRoute.toTimestamp = undefined;
+								} else if (!device.currentRoute.toLocation && device.currentRoute.enteredFrom) {
+									// B2.1
+									//console.log('Branch B2.1');
+									device.currentRoute.fromTimestamp = eventTime;
+									events.push(createGeoFenceEvent(deviceId, eventType.EXIT_GEOFENCE, eventTime, device.currentRoute.fromLocation));
+								}
 							}
 						}
 					} else {
@@ -145,23 +165,25 @@ exports.handleGeoEvent = function(message) {
 						 *	1.3. To location not exists, different geofence as fromLocation, not stay long enough, mark as potential fromLocation (previous fromLocation is just passing through)
 						 *	1.4. To location not exists, different geofence as fromLocation, stay long enough, mark as potential toLocation
 						 *	1.5. To location exists, different geofence as toLocation, not stay long enough, mark as potential toLocation (previous toLocation is just passing through)
+						 *	1.6. Return to same location as from after exit, mark as potential to
 						 *	2. Last route exists => from location (must) exists
 						 *	2.1. Stay in same geofence as from/to, check fire enter/route complete event
-						 *	2.2. To location not exists, different geofence as fromLocation, mark as potential toLocation
+						 *	2.2. To location not exists, just entered geo location, mark as potential toLocation
 						 *	2.3. To location exists, different geofence as toLocation, not stay long enough, mark as reached potential toLocation (previous toLocation is just passing through)
 						**/
 						// A1
 						if (!device.lastRoute.toLocation) {
 							if (device.currentRoute.toLocation) {
-								var stayTimeInToLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
+								// var stayTimeInToLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
 								if (device.currentRoute.toLocation.geoId === matchedGeoFence.geoFence.geoId) {
 									// A1.1
 									//console.log('Branch A1.1');
 									var stayTimeInMin = eventTime.diff(device.currentRoute.toTimestamp, 'minutes');
 									// Avoid duplicate enter geofence event, create enter geofence event
 									if (stayTimeInMin >= timeTolerence.ENTER_GEOFENCE) {
-										//device.lastGeoFenceTimestamp = eventTime;
-										if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
+										// if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
+										if (!device.currentRoute.enteredTo) {
+											device.currentRoute.enteredTo = true;
 											events.push(createGeoFenceEvent(deviceId, eventType.ENTER_GEOFENCE, eventTime, device.currentRoute.toLocation));
 											events.push(createRouteCompletedEvent(deviceId, eventTime, device.currentRoute));
 											device.lastRoute = _.cloneDeep(device.currentRoute);
@@ -169,13 +191,15 @@ exports.handleGeoEvent = function(message) {
 												fromLocation: device.lastRoute.toLocation
 												, fromTimestamp: eventTime
 											};
+											device.currentRoute.enteredFrom = true;
 										}
 									}
 									// else: Enter geofence already sent, device stay in same toLocation
 								} else {
 									// A1.5
 									//console.log('Branch A1.5');
-									if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
+									// if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
+									if (!device.currentRoute.enteredTo) {
 										device.currentRoute.toLocation = {
 											geoId: matchedGeoFence.geoFence.geoId
 											, geoName: matchedGeoFence.geoFence.geoName
@@ -185,21 +209,34 @@ exports.handleGeoEvent = function(message) {
 									// else: not expected
 								}
 							} else if (device.currentRoute.fromLocation) {
-								var stayTimeInFromLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.fromTimestamp, 'minutes');
+								// var stayTimeInFromLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.fromTimestamp, 'minutes');
 								if (device.currentRoute.fromLocation.geoId === matchedGeoFence.geoFence.geoId) {
-									// A1.1
-									//console.log('Branch A1.1');
-									var stayTimeInMin = eventTime.diff(device.currentRoute.fromTimestamp, 'minutes');
-									// Avoid duplicate enter geofence event, create enter geofence event
-									if (stayTimeInMin >= timeTolerence.ENTER_GEOFENCE) {
-										//device.lastGeoFenceTimestamp = eventTime;
-										if (stayTimeInFromLoc < timeTolerence.ENTER_GEOFENCE) {
-											events.push(createGeoFenceEvent(deviceId, eventType.ENTER_GEOFENCE, eventTime, device.currentRoute.fromLocation));
+									if (device.lastGeoFenceTimestamp === device.lastGPSTimestamp) {
+										// A1.1
+										//console.log('Branch A1.1');
+										var stayTimeInMin = eventTime.diff(device.currentRoute.fromTimestamp, 'minutes');
+										// Avoid duplicate enter geofence event, create enter geofence event
+										if (stayTimeInMin >= timeTolerence.ENTER_GEOFENCE) {
+											// if (stayTimeInFromLoc < timeTolerence.ENTER_GEOFENCE) {
+											if (!device.currentRoute.enteredFrom) {
+												events.push(createGeoFenceEvent(deviceId, eventType.ENTER_GEOFENCE, eventTime, device.currentRoute.fromLocation));
+												device.currentRoute.enteredFrom = true;
+											}
 										}
+										// }
+										// else: Enter geofence already sent, device stay in same fromLocation
+									} else {
+										// A1.6
+										//console.log('Branch A1.6');
+										device.currentRoute.toLocation = {
+											geoId: matchedGeoFence.geoFence.geoId
+											, geoName: matchedGeoFence.geoFence.geoName
+										};
+										device.currentRoute.toTimestamp = eventTime;
 									}
-									// else: Enter geofence already sent, device stay in same fromLocation
 								} else {
-									if (stayTimeInFromLoc < timeTolerence.ENTER_GEOFENCE) {
+									// if (stayTimeInFromLoc < timeTolerence.ENTER_GEOFENCE) {
+									if (!device.currentRoute.enteredFrom) {
 										// 1.3
 										//console.log('Branch A1.3');
 										device.currentRoute.fromLocation = {
@@ -230,15 +267,16 @@ exports.handleGeoEvent = function(message) {
 							// A2
 							//console.log('Branch A2');
 							if (device.currentRoute.toLocation) {
-								var stayTimeInToLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
+								// var stayTimeInToLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.toTimestamp, 'minutes');
 								if (device.currentRoute.toLocation.geoId === matchedGeoFence.geoFence.geoId) {
 									// A2.1
 									//console.log('Branch A2.1');
 									var stayTimeInMin = eventTime.diff(device.currentRoute.toTimestamp, 'minutes');
 									// Avoid duplicate enter geofence event, create enter geofence event
 									if (stayTimeInMin >= timeTolerence.ENTER_GEOFENCE) {
-										//device.lastGeoFenceTimestamp = eventTime;
-										if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
+										// if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
+										if (!device.currentRoute.enteredTo) {
+											device.currentRoute.enteredTo = true;
 											events.push(createGeoFenceEvent(deviceId, eventType.ENTER_GEOFENCE, eventTime, device.currentRoute.toLocation));
 											events.push(createRouteCompletedEvent(deviceId, eventTime, device.currentRoute));
 											device.lastRoute = _.cloneDeep(device.currentRoute);
@@ -246,13 +284,15 @@ exports.handleGeoEvent = function(message) {
 												fromLocation: device.lastRoute.toLocation
 												, fromTimestamp: eventTime
 											};
+											device.currentRoute.enteredFrom = true;
 										}
 									}
 									// else: enter geofence already sent, device stay in same toLocation
 								} else {
 									// A2.3
 									//console.log('Branch A2.3');
-									if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
+									if (!device.currentRoute.enteredTo) {
+									// if (stayTimeInToLoc < timeTolerence.ENTER_GEOFENCE) {
 										device.currentRoute.toLocation = {
 											geoId: matchedGeoFence.geoFence.geoId
 											, geoName: matchedGeoFence.geoFence.geoName
@@ -264,14 +304,15 @@ exports.handleGeoEvent = function(message) {
 							} else {
 								// A2.2
 								//console.log('Branch A2.2');
-								if (device.currentRoute.fromLocation.geoId !== matchedGeoFence.geoFence.geoId) {
+								// if (device.currentRoute.fromLocation.geoId !== matchedGeoFence.geoFence.geoId) {
+								if (device.lastGPSTimestamp !== device.lastGeoFenceTimestamp) {
 									device.currentRoute.toLocation = {
 										geoId: matchedGeoFence.geoFence.geoId
 										, geoName: matchedGeoFence.geoFence.geoName
 									};
 									device.currentRoute.toTimestamp = eventTime;
 								}
-								// else: not expected
+								// // else: not expected
 							}
 						}
 						device.lastGeoFenceTimestamp = eventTime;
@@ -286,7 +327,7 @@ exports.handleGeoEvent = function(message) {
 				}
 			});
 			//console.log('Events:');
-			//_.forEach(events, function(event) {console.log(JSON.stringify(event, false, null));});
+			// _.forEach(events, function(event) {console.log(JSON.stringify(event, false, null));});
 			async.waterfall(
 				[
 					function(callback) {
