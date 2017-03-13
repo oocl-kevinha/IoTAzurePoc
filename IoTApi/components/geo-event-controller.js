@@ -38,10 +38,10 @@ exports.handleGeoEvent = function(message) {
 						geoEvents
 						// , 2
 						, function(gpsSignal, eachCallback) {
-							if (gpsSignal.hAccuracy > config.tolerence.H_ACCURACY || gpsSignal.hAccuracy < 0) {
+							if (gpsSignal.hAccuracy > config.tolerence.H_ACCURACY || gpsSignal.hAccuracy < 0 || (devices[0].lastGPSTimestamp && moment(gpsSignal.timeStamp).diff(devices[0].lastGPSTimestamp) >= 0)) {
 								return eachCallback(undefined);
 							}
-							var coords = JSON.stringify({ type: 'Point', coordinates: [parseFloat(gpsSignal.longitude), parseFloat(gpsSignal.latitude)] });
+							var coords = JSON.stringify({ type: 'Point', coordinates: [gpsSignal.longitude, gpsSignal.latitude] });
 							// console.log(`SELECT TOP 1 g.geoId, g.geoName FROM ${config.collection.geoFences} g WHERE g.isDeleted != 'T' AND (ST_WITHIN(${coords}, g.coords)` + ` OR ST_DISTANCE(${coords}, g.coords) < g.radiusInMetre)`);
 							common.queryCollection(
 								config.collection.geoFences
@@ -53,7 +53,7 @@ exports.handleGeoEvent = function(message) {
 									if (err) {
 										return eachCallback(err);
 									}
-									// console.log(c++);
+									//console.log(c++);
 									// console.log('Matched Location: ' + JSON.stringify(docs));
 									eachCallback(undefined, { gps: gpsSignal, geoFence: docs[0] });
 								}
@@ -83,8 +83,8 @@ exports.handleGeoEvent = function(message) {
 					// Skip non-accurate gps, hAccuracy > tolerence (refer config)
 					return;
 				}
-				var eventTime = moment(parseInt(matchedGeoFence.gps.timeStamp));
-				device.lastGPSEvent = { timeStamp: eventTime, latitude: parseFloat(matchedGeoFence.gps.latitude), longitude: parseFloat(matchedGeoFence.gps.longitude), timezone: matchedGeoFence.gps.timezone };
+				var eventTime = moment(matchedGeoFence.gps.timeStamp);
+				device.lastGPSEvent = { timeStamp: eventTime, latitude: matchedGeoFence.gps.latitude, longitude: matchedGeoFence.gps.longitude, timezone: matchedGeoFence.gps.timezone };
 				// Special handling for first event
 				device.lastGPSTimestamp = device.lastGPSTimestamp || eventTime;
 				device.lastGeoFenceTimestamp = device.lastGeoFenceTimestamp || eventTime;
@@ -101,7 +101,7 @@ exports.handleGeoEvent = function(message) {
 						 *	1.3. From location exists, not stay long enough, erase fromLocation (previous fromLocation just passing through)
 						 *	1.4. To location exists, not stay long enough, erase toLocation (previous toLocation is just passing through)
 						 *	2. Last route exists => from location (must) exists
-						 *	2.1. Last geofence timestamp equals last gps timestamp, to location not exists, i.e. last gps within geofence, set fromTimestamp to gps signal time, fire exit geo fence event
+						 *	2.1. Last geofence timestamp equals last gps timestamp, to location not exists, i.e. last gps within geofence, set fromTimestamp to last gps signal time, fire exit geo fence event
 						 *	2.2. Last geofence timestamp equals last gps timestamp, to location exists, i.e. pass through, remove potential to location
 						**/
 						if (!device.lastRoute.toLocation) {
@@ -149,7 +149,7 @@ exports.handleGeoEvent = function(message) {
 								} else if (!device.currentRoute.toLocation && device.currentRoute.enteredFrom) {
 									// B2.1
 									//console.log('Branch B2.1');
-									device.currentRoute.fromTimestamp = eventTime;
+									device.currentRoute.fromTimestamp = device.lastGeoFenceTimestamp;
 									events.push(createGeoFenceEvent(deviceId, eventType.EXIT_GEOFENCE, eventTime, device.currentRoute.fromLocation));
 								}
 							}

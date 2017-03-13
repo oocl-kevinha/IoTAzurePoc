@@ -1,7 +1,7 @@
 'use strict';
 var _ = require('lodash');
 var async = require('async');
-var moment = require('moment');
+var moment = require('moment-timezone');
 var common = require('../../util/common');
 var config = require('../../config/azure-keys');
 var responseFactory = require('../../util/response-factory');
@@ -22,7 +22,7 @@ function queryEventByDeviceId(req, res, next) {
 			function(callback) {
 				// Intermediate handling both string type and numeric type, field type is not standardized yet
 				var querySpec = {
-					query: `SELECT TOP ${topLimit} * FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND r.hAccuracy <= 500 AND r.hAccuracy > -1 AND r.timeStamp <= @timeStamp ORDER BY r.timeStamp DESC`
+					query: `SELECT TOP ${topLimit} * FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND r.hAccuracy <= ${config.tolerence.H_ACCURACY} AND r.hAccuracy > -1 AND r.timeStamp <= @timeStamp ORDER BY r.timeStamp DESC`
 					, parameters: [
 						{ name: '@deviceId', value: req.params.deviceId }
 						, { name: '@timeStamp', value: req.query.timeStamp }
@@ -36,7 +36,7 @@ function queryEventByDeviceId(req, res, next) {
 			}
 			, function(fetchedRecords, callback) {
 				var querySpec = {
-					query: `SELECT COUNT(r) COUNT FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND r.hAccuracy <= 500 AND r.hAccuracy > -1`
+					query: `SELECT COUNT(r) COUNT FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND r.hAccuracy <= ${config.tolerence.H_ACCURACY} AND r.hAccuracy > -1`
 					, parameters: [
 						{ name: '@deviceId', value: req.params.deviceId }
 					]
@@ -128,10 +128,14 @@ function fetchRecord(cursor, rowToSkip, pageSize, resultHolder, callback) {
 						var startIdx = pageSize - resultHolder.length;
 						resultHolder = _.concat(resultHolder, _.take(nextBatch, startIdx));
 						var fetchCompleted = false;
-						var groupDate = resultHolder[resultHolder.length - 1].groupDate;
+						// Return events having same Date in local timezone which is same as the last event in requested page
+						var timezone = _.trim(_.split(resultHolder[resultHolder.length - 1].timezone, '(')[0]);
+						var fullTimezone = resultHolder[resultHolder.length - 1].timezone;
+						var lastEventDate = moment(resultHolder[resultHolder.length - 1].timeStamp).tz(timezone).format('YYYYMMDD');
 
 						for (var n = startIdx; n < nextBatch.length; n++) {
-							if (nextBatch[n].groupDate === groupDate) {
+							var currTimezone = _.trim(_.split(nextBatch[n].timezone, '(')[0]);
+							if (fullTimezone === nextBatch[n].timezone && moment(nextBatch[n].timeStamp).tz(currTimezone).format('YYYYMMDD') === lastEventDate) {
 								resultHolder.push(nextBatch[n]);
 							} else {
 								fetchCompleted = true;
@@ -147,10 +151,14 @@ function fetchRecord(cursor, rowToSkip, pageSize, resultHolder, callback) {
 						// Extract remaining row of same day
 						//console.log('B1.1.2');
 						var fetchCompleted = false;
-						var groupDate = resultHolder[resultHolder.length - 1].groupDate;
+						// Return events having same Date in local timezone which is same as the last event in requested page
+						var timezone = _.trim(_.split(resultHolder[resultHolder.length - 1].timezone, '(')[0]);
+						var fullTimezone = resultHolder[resultHolder.length - 1].timezone;
+						var lastEventDate = moment(resultHolder[resultHolder.length - 1].timeStamp).tz(timezone).format('YYYYMMDD');
 
 						for (var n = 0; n < nextBatch.length; n++) {
-							if (nextBatch[n].groupDate === groupDate) {
+							var currTimezone = _.trim(_.split(nextBatch[n].timezone, '(')[0]);
+							if (fullTimezone === nextBatch[n].timezone && moment(nextBatch[n].timeStamp).tz(currTimezone).format('YYYYMMDD') === lastEventDate) {
 								resultHolder.push(nextBatch[n]);
 							} else {
 								fetchCompleted = true;
