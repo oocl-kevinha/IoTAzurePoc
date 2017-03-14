@@ -89,7 +89,7 @@ exports.handleGeoEvent = function(message) {
 			}
 			, function (devices, callback) {
 				if (devices.length > 0) {
-					var c = 0;
+					// var c = 0;
 					// async.concatSeries(
 					async.map(
 						geoEvents

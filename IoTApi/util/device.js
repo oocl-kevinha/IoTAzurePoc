@@ -1,4 +1,5 @@
 var httpManager = require('../util/http-manager');
+var config = require('../config/azure-keys');
 
 module.exports = {
 	retrieveIoTDeviceOnHubById: retrieveIoTDeviceOnHubById
@@ -9,7 +10,7 @@ module.exports = {
 function retrieveIoTDeviceOnHubById(deviceId, sasToken, callback) {
 	httpManager.get(
 		{ Authorization: sasToken }
-		, `https://IoTPOCGateway.azure-devices.net/devices/${deviceId}?api-version=2016-11-14`
+		, `https://${config.iothub_host}/devices/${deviceId}?api-version=2016-11-14`
 		, true
 		, callback
 	);
@@ -18,7 +19,7 @@ function retrieveIoTDeviceOnHubById(deviceId, sasToken, callback) {
 function createIoTDeviceOnHub(device, sasToken, callback) {
 	httpManager.put(
 		{ Authorization: sasToken }
-		, `https://IoTPOCGateway.azure-devices.net/devices/${device.deviceId}?api-version=2016-11-14`
+		, `https://${config.iothub_host}/devices/${device.deviceId}?api-version=2016-11-14`
 		, {
 			deviceId: device.deviceId
 			, connectionState: device.connectionState
