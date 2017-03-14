@@ -38,7 +38,7 @@ exports.handleGeoEvent = function(message) {
 						geoEvents
 						// , 2
 						, function(gpsSignal, eachCallback) {
-							if (gpsSignal.hAccuracy > config.tolerence.H_ACCURACY || gpsSignal.hAccuracy < 0 || (devices[0].lastGPSTimestamp && moment(gpsSignal.timeStamp).diff(devices[0].lastGPSTimestamp) >= 0)) {
+							if (gpsSignal.hAccuracy > config.tolerence.H_ACCURACY || gpsSignal.hAccuracy < 0 || (devices[0].lastGPSTimestamp && moment(gpsSignal.timeStamp).diff(devices[0].lastGPSTimestamp) <= 0)) {
 								return eachCallback(undefined);
 							}
 							var coords = JSON.stringify({ type: 'Point', coordinates: [gpsSignal.longitude, gpsSignal.latitude] });
@@ -189,7 +189,7 @@ exports.handleGeoEvent = function(message) {
 											device.lastRoute = _.cloneDeep(device.currentRoute);
 											device.currentRoute = {
 												fromLocation: device.lastRoute.toLocation
-												, fromTimestamp: eventTime
+												, fromTimestamp: _.cloneDeep(eventTime)
 											};
 											device.currentRoute.enteredFrom = true;
 										}
@@ -243,7 +243,7 @@ exports.handleGeoEvent = function(message) {
 											geoId: matchedGeoFence.geoFence.geoId
 											, geoName: matchedGeoFence.geoFence.geoName
 										};
-										device.currentRoute.fromTimestamp = eventTime;
+										device.currentRoute.fromTimestamp = _.cloneDeep(eventTime);
 									} else {
 										// 1.4
 										//console.log('Branch A1.4');
@@ -251,7 +251,7 @@ exports.handleGeoEvent = function(message) {
 											geoId: matchedGeoFence.geoFence.geoId
 											, geoName: matchedGeoFence.geoFence.geoName
 										};
-										device.currentRoute.toTimestamp = eventTime;
+										device.currentRoute.toTimestamp = _.cloneDeep(eventTime);
 									}
 								}
 							} else {
@@ -261,7 +261,7 @@ exports.handleGeoEvent = function(message) {
 									geoId: matchedGeoFence.geoFence.geoId
 									, geoName: matchedGeoFence.geoFence.geoName
 								};
-								device.currentRoute.fromTimestamp = eventTime;
+								device.currentRoute.fromTimestamp = _.cloneDeep(eventTime);
 							}
 						} else {
 							// A2
@@ -282,7 +282,7 @@ exports.handleGeoEvent = function(message) {
 											device.lastRoute = _.cloneDeep(device.currentRoute);
 											device.currentRoute = {
 												fromLocation: device.lastRoute.toLocation
-												, fromTimestamp: eventTime
+												, fromTimestamp: _.cloneDeep(eventTime)
 											};
 											device.currentRoute.enteredFrom = true;
 										}
@@ -297,7 +297,7 @@ exports.handleGeoEvent = function(message) {
 											geoId: matchedGeoFence.geoFence.geoId
 											, geoName: matchedGeoFence.geoFence.geoName
 										};
-										device.currentRoute.toTimestamp = eventTime;
+										device.currentRoute.toTimestamp = _.cloneDeep(eventTime);
 									}
 									// else: not expected
 								}
@@ -310,14 +310,14 @@ exports.handleGeoEvent = function(message) {
 										geoId: matchedGeoFence.geoFence.geoId
 										, geoName: matchedGeoFence.geoFence.geoName
 									};
-									device.currentRoute.toTimestamp = eventTime;
+									device.currentRoute.toTimestamp = _.cloneDeep(eventTime);
 								}
 								// // else: not expected
 							}
 						}
-						device.lastGeoFenceTimestamp = eventTime;
+						device.lastGeoFenceTimestamp = _.cloneDeep(eventTime);
 					}
-					device.lastGPSTimestamp = eventTime;
+					device.lastGPSTimestamp = _.cloneDeep(eventTime);
 					//console.log('Last Route: ' + eventTime);
 					//console.log(JSON.stringify(device.lastRoute, false, null));
 					//console.log('Current Route: ' + eventTime);
@@ -358,8 +358,8 @@ function createGeoFenceEvent(deviceId, eventType, eventTime, location) {
 		eventLogId: uuid.v4().toString()
 		, eventType: eventType
 		, deviceId: deviceId
-		, eventTime: eventTime
-		, location: location
+		, eventTime: _.cloneDeep(eventTime)
+		, location: _.cloneDeep(location)
 		, createdAt: new Date()
 	};
 }
@@ -369,11 +369,11 @@ function createRouteCompletedEvent(deviceId, eventTime, route) {
 		eventLogId: uuid.v4().toString()
 		, eventType: eventType.ROUTE_COMPLETED
 		, deviceId: deviceId
-		, eventTime: eventTime
-		, fromTimestamp: route.fromTimestamp
-		, toTimestamp: route.toTimestamp
-		, fromLocation: route.fromLocation
-		, toLocation: route.toLocation
+		, eventTime: _.cloneDeep(eventTime)
+		, fromTimestamp: _.cloneDeep(route.fromTimestamp)
+		, toTimestamp: _.cloneDeep(route.toTimestamp)
+		, fromLocation: _.cloneDeep(route.fromLocation)
+		, toLocation: _.cloneDeep(route.toLocation)
 		, createdAt: new Date()
 	};
 }
