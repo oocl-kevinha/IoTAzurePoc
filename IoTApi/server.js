@@ -15,47 +15,47 @@ var server = http.createServer(app);
 
 const mapKey = require('./config/azure-keys').mapKey;
 
-require('./util/common').initializeDB();
-//require('./util/common').initializeEventListener();
+require('./util/common').initializeDB(function() {
+	require('./util/common').initializeEventListener();
+	app.use(cors());
+	app.use(bodyParser.json({limit: '50mb'}));
+	app.use(function(req, res, next) {
+		res.setHeader('Access-Control-Allow-Origin', '*');
+		next();
+	});
 
-app.use(cors());
-app.use(bodyParser.json({limit: '50mb'}));
-app.use(function(req, res, next) {
-	res.setHeader('Access-Control-Allow-Origin', '*');
-	next();
-});
+	app.set('view engine', 'ejs');
+	app.engine('html', require('ejs').renderFile);
+	app.engine('ejs', require('ejs').renderFile);
 
-app.set('view engine', 'ejs');
-app.engine('html', require('ejs').renderFile);
-app.engine('ejs', require('ejs').renderFile);
+	var router = express.Router();
+	router.use('/bower', express.static('bower_components'));
+	router.use('/js/lib', express.static('public/js/lib'));
+	router.use('/js/dist', express.static('public/js/dist'));
+	router.use('/css/lib', express.static('public/css/lib'));
+	router.use('/css/dist', express.static('public/css/dist'));
 
-var router = express.Router();
-router.use('/bower', express.static('bower_components'));
-router.use('/js/lib', express.static('public/js/lib'));
-router.use('/js/dist', express.static('public/js/dist'));
-router.use('/css/lib', express.static('public/css/lib'));
-router.use('/css/dist', express.static('public/css/dist'));
+	app.use(router);
+	app.use(require('./components/geo-route'));
 
-app.use(router);
-app.use(require('./components/geo-route'));
+	app.use('/dashboard', function(req, res) {
+		// absolute path as view directory appears to be over-written by swaggerize
+		res.render(__dirname + '/public/view/geo-fencing-tool.ejs', { mapKey: mapKey, isGoogleMap: req.query.osm? false: true });
+	});
 
-app.use('/dashboard', function(req, res) {
-	// absolute path as view directory appears to be over-written by swaggerize
-	res.render(__dirname + '/public/view/geo-fencing-tool.ejs', { mapKey: mapKey, isGoogleMap: req.query.osm? false: true });
-});
+	app.use(swaggerize({
+		api: path.resolve('./config/swagger.json'),
+		handlers: path.resolve('./handlers'),
+		docspath: '/swagger',
+		security: './security'
+	}));
 
-app.use(swaggerize({
-	api: path.resolve('./config/swagger.json'),
-	handlers: path.resolve('./handlers'),
-	docspath: '/swagger',
-	security: './security'
-}));
-
-app.use('/docs', swaggerUi({
-	docs: '/swagger'
-}));
+	app.use('/docs', swaggerUi({
+		docs: '/swagger'
+	}));
 
 
-server.listen(port, function () { // fifth and final change
-	console.info('App running on %s:%d', this.address().address, this.address().port);
+	server.listen(port, function () { // fifth and final change
+		console.info('App running on %s:%d', this.address().address, this.address().port);
+	});
 });

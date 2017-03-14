@@ -44,14 +44,25 @@ function initializeEventListener() {
 
 }
 
-function initializeDB() {
+function initializeDB(onComplete) {
 	getDatabase()
 		.then(() => getCollection(config.collection.devices))
 		.then(() => getCollection(config.collection.events))
 		.then(() => getCollection(config.collection.geoFences))
 		.then(() => getCollection(config.collection.eventLogs))
-		.then(() => console.log('All collections initialized'))
-		.catch((error) => console.error('DB/Collection initialization failed [' + JSON.stringify(error, false, null) + ']'));
+		.then(() => {
+			console.log('All collections initialized')
+			return queryCollection(config.collection.geoFences, `SELECT * FROM ${config.collection.geoFences} g WHERE g.isDeleted != 'T'`);
+		})
+		.then(function(geoFences) {
+			require('../components/geo-event-controller').setGeoFenceList(geoFences);
+			console.info('Geo Fence list initialized');
+			onComplete();
+		})
+		.catch((error) => {
+			console.error('DB/Collection initialization failed [' + JSON.stringify(error, false, null) + ']');
+			onComplete();
+		});
 }
 
 function buildCollectionUrl(collectionName) {

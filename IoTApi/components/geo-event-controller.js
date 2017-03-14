@@ -2,12 +2,69 @@ var _ = require('lodash');
 var async = require('async');
 var uuid = require('uuid');
 var moment = require('moment');
+var geolib = require('geolib');
 var config = require('../config/azure-keys.js');
 var common = require('../util/common');
+var geoFenceList = [];
 
 const timeTolerence = config.tolerence.timeTolerence;
 
 const eventType = config.eventType;
+
+exports.removeGeoFence = function(id) {
+	_.remove(geoFenceList, function(geoFence) {
+		return geoFence.geoId === id;
+	});
+};
+
+exports.setGeoFenceList = function(list, isAppend) {
+	if (isAppend) {
+		geoFenceList.push({
+			geoId: list.geoId
+			, geoName: list.geoName
+			, geoType: list.geoType
+			, coordinates: list.geoType == 'polygon'
+				? _.map(list.coords.coordinates[0], function(point) {
+					return {latitude: point[1], longitude: point[0]}
+				})
+				: { latitude: list.coords.coordinates[1], longitude: list.coords.coordinates[0] }
+			, radius: list.radiusInMetre
+		});
+	} else {
+		geoFenceList = _.map(list, function(shape) {
+			return {
+				geoId: shape.geoId
+				, geoName: shape.geoName
+				, geoType: shape.geoType
+				, coordinates: shape.geoType == 'polygon'
+					? _.map(shape.coords.coordinates[0], function(point) {
+						return { latitude: point[1], longitude: point[0] }
+					})
+					: { latitude: shape.coords.coordinates[1], longitude: shape.coords.coordinates[0] }
+				, radius: shape.radiusInMetre
+			};
+		});
+	}
+};
+
+function getGeoFence(point, limit) {
+	var result = [];
+	_.forEach(geoFenceList, function(geoFence) {
+		if (geoFence.geoType == 'polygon') {
+			if (geolib.isPointInside(point, geoFence.coordinates)) {
+				result.push({ geoId: geoFence.geoId, geoName: geoFence.geoName });
+			}
+		} else {
+			if (geolib.getDistance(point, geoFence.coordinates) <= geoFence.radius) {
+				result.push({ geoId: geoFence.geoId, geoName: geoFence.geoName });
+			}
+		}
+		if (result.length >= limit) {
+			return false;
+		}
+	});
+	return result;
+}
 
 exports.handleGeoEvent = function(message) {
 	var deviceId = message.systemProperties['iothub-connection-device-id'];
@@ -32,32 +89,35 @@ exports.handleGeoEvent = function(message) {
 			}
 			, function (devices, callback) {
 				if (devices.length > 0) {
-					async.concatSeries(
-					// var c = 0;
-					// async.mapLimit(
+					var c = 0;
+					// async.concatSeries(
+					async.map(
 						geoEvents
 						// , 2
 						, function(gpsSignal, eachCallback) {
 							if (gpsSignal.hAccuracy > config.tolerence.H_ACCURACY || gpsSignal.hAccuracy < 0 || (devices[0].lastGPSTimestamp && moment(gpsSignal.timeStamp).diff(devices[0].lastGPSTimestamp) <= 0)) {
 								return eachCallback(undefined);
 							}
-							var coords = JSON.stringify({ type: 'Point', coordinates: [gpsSignal.longitude, gpsSignal.latitude] });
+							//var coords = JSON.stringify({ type: 'Point', coordinates: [gpsSignal.longitude, gpsSignal.latitude] });
 							// console.log(`SELECT TOP 1 g.geoId, g.geoName FROM ${config.collection.geoFences} g WHERE g.isDeleted != 'T' AND (ST_WITHIN(${coords}, g.coords)` + ` OR ST_DISTANCE(${coords}, g.coords) < g.radiusInMetre)`);
-							common.queryCollection(
-								config.collection.geoFences
-								// No overlap area handling yet, assume only single polygon at a time
-								, `SELECT TOP 1 g.geoId, g.geoName FROM ${config.collection.geoFences} g WHERE g.isDeleted != 'T' AND (ST_WITHIN(${coords}, g.coords)`
-								+ ` OR ST_DISTANCE(${coords}, g.coords) < g.radiusInMetre)`
-								, false
-								, function(err, docs) {
-									if (err) {
-										return eachCallback(err);
-									}
-									//console.log(c++);
-									// console.log('Matched Location: ' + JSON.stringify(docs));
-									eachCallback(undefined, { gps: gpsSignal, geoFence: docs[0] });
-								}
-							);
+							//console.log(c++);
+							eachCallback(undefined, { gps: gpsSignal, geoFence: getGeoFence({ latitude: gpsSignal.latitude, longitude: gpsSignal.longitude }, 1)[0] });
+
+							// common.queryCollection(
+							// 	config.collection.geoFences
+							// 	// No overlap area handling yet, assume only single polygon at a time
+							// 	, `SELECT TOP 1 g.geoId, g.geoName FROM ${config.collection.geoFences} g WHERE g.isDeleted != 'T' AND (ST_WITHIN(${coords}, g.coords)`
+							// 	+ ` OR ST_DISTANCE(${coords}, g.coords) < g.radiusInMetre)`
+							// 	, false
+							// 	, function(err, docs) {
+							// 		if (err) {
+							// 			return eachCallback(err);
+							// 		}
+							// 		//console.log(c++);
+							// 		// console.log('Matched Location: ' + JSON.stringify(docs));
+							// 		eachCallback(undefined, { gps: gpsSignal, geoFence: docs[0] });
+							// 	}
+							// );
 						}
 						, function(err, matchedGeoFences) {
 							callback(err, devices[0], matchedGeoFences);
@@ -124,7 +184,7 @@ exports.handleGeoEvent = function(message) {
 								if (!device.currentRoute.enteredFrom) {
 									device.currentRoute.fromLocation = undefined;
 									device.currentRoute.fromTimestamp = undefined;
-								} else if (device.lastGPSTimestamp === device.lastGeoFenceTimestamp) {
+								} else if (moment(device.lastGPSTimestamp).diff(device.lastGeoFenceTimestamp) == 0) {
 									// Just exited geo fence, mark route start time as last geo fence point
 									device.currentRoute.fromTimestamp = device.lastGeoFenceTimestamp;
 									events.push(createGeoFenceEvent(deviceId, eventType.EXIT_GEOFENCE, eventTime, device.currentRoute.fromLocation));
@@ -140,7 +200,7 @@ exports.handleGeoEvent = function(message) {
 							// 		&& eventTime.diff(device.currentRoute.toTimestamp || device.currentRoute.fromTimestamp, 'minutes') >= timeTolerence.ENTER_GEOFENCE) {
 
 							// Should not have case where current route entered to location as rolled to last route once confirmed
-							if (device.lastGPSTimestamp === device.lastGeoFenceTimestamp) {
+							if (moment(device.lastGPSTimestamp).diff(device.lastGeoFenceTimestamp) == 0) {
 								if (device.currentRoute.toLocation && !device.currentRoute.enteredTo) {
 									// B2.2
 									//console.log('Branch B2.2');
@@ -211,7 +271,7 @@ exports.handleGeoEvent = function(message) {
 							} else if (device.currentRoute.fromLocation) {
 								// var stayTimeInFromLoc = moment(device.lastGeoFenceTimestamp).diff(device.currentRoute.fromTimestamp, 'minutes');
 								if (device.currentRoute.fromLocation.geoId === matchedGeoFence.geoFence.geoId) {
-									if (device.lastGeoFenceTimestamp === device.lastGPSTimestamp) {
+									if (moment(device.lastGeoFenceTimestamp).diff(device.lastGPSTimestamp) == 0) {
 										// A1.1
 										//console.log('Branch A1.1');
 										var stayTimeInMin = eventTime.diff(device.currentRoute.fromTimestamp, 'minutes');
@@ -305,7 +365,7 @@ exports.handleGeoEvent = function(message) {
 								// A2.2
 								//console.log('Branch A2.2');
 								// if (device.currentRoute.fromLocation.geoId !== matchedGeoFence.geoFence.geoId) {
-								if (device.lastGPSTimestamp !== device.lastGeoFenceTimestamp) {
+								if (moment(device.lastGPSTimestamp).diff(device.lastGeoFenceTimestamp) != 0) {
 									device.currentRoute.toLocation = {
 										geoId: matchedGeoFence.geoFence.geoId
 										, geoName: matchedGeoFence.geoFence.geoName
@@ -318,9 +378,11 @@ exports.handleGeoEvent = function(message) {
 						device.lastGeoFenceTimestamp = _.cloneDeep(eventTime);
 					}
 					device.lastGPSTimestamp = _.cloneDeep(eventTime);
-					//console.log('Last Route: ' + eventTime);
+					//console.log('Last Geo Fence: ' + device.lastGeoFenceTimestamp.toISOString());
+					//console.log('Last GPS: ' + device.lastGPSTimestamp.toISOString());
+					//console.log('Last Route: ' + eventTime.toISOString());
 					//console.log(JSON.stringify(device.lastRoute, false, null));
-					//console.log('Current Route: ' + eventTime);
+					//console.log('Current Route: ' + eventTime.toISOString());
 					//console.log(JSON.stringify(device.currentRoute, false, null));
 				} catch (ex) {
 					console.error(ex);

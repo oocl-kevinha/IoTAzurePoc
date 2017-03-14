@@ -3,6 +3,7 @@ var async = require('async');
 var uuid = require('uuid');
 var config = require('../config/azure-keys.js');
 var common = require('../util/common');
+var geoEventController = require('./geo-event-controller');
 var responseFactory = require('../util/response-factory');
 var shapeUtil = require('../util/shape-util');
 
@@ -66,6 +67,7 @@ exports.deleteGeoFence = function(req, res) {
 				}
 				return;
 			}
+			geoEventController.removeGeoFence(req.params.geoId);
 			res.status(204).end();
 		}
 	);
@@ -102,6 +104,9 @@ exports.createGeoFenceLocations = function(req, res) {
 				console.error(err);
 				return res.status(500).json(responseFactory.buildFailureResponse(err));
 			}
+			_.forEach(geoFences, function(geoFence) {
+				geoEventController.setGeoFenceList(geoFence, true);
+			});
 			res.json(responseFactory.buildSuccessResponse(result));
 		}
 	);
