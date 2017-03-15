@@ -21,6 +21,11 @@ function getGeoFenceInBound(req, res) {
 				+ ', g.coords) AND g.isDeleted != \'T\' ORDER BY g.geoName';
 	common.queryCollection(config.collection.geoFences, query)
 		.then((result) => {
+			_.forEach(result, function(polygon) {
+				if (polygon.geoType === 'polygon') {
+					polygon.coords.coordinates = polygon.coords.coordinates[0];
+				}
+			});
 			res.json(responseFactory.buildSuccessResponse(result));
 		})
 		.catch((err) => {

@@ -305,7 +305,7 @@ function initMap() {
 								});
 							} else {
 								shapeObject = new google.maps.Polygon({
-									paths: _.map(data.coords.coordinates[0], function(lngLat) { return { lng: lngLat[0], lat: lngLat[1] }; })
+									paths: _.map(data.coords.coordinates, function(lngLat) { return { lng: lngLat[0], lat: lngLat[1] }; })
 									, fillColor: '#0fff00'
 									, fillOpacity: 0.5
 									, strokeWeight: 2
