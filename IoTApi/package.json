@@ -52,7 +52,7 @@
     "cover": "istanbul cover tape -- 'tests/**/*.js'",
     "lint": "eslint .",
     "regenerate": "yo swaggerize:test --framework express --apiPath './config/swagger.json'",
-    "regenerate-handler": "yo swaggerize:handler --skip-npm-install --framework express --apiPath './config/swagger.json'",
+    "regenerate-handler": "yo swaggerize:handler --skip-npm-install --framework express --apiPath ./config/swagger.json",
     "postinstall": "bower install"
   },
   "generator-swaggerize": {

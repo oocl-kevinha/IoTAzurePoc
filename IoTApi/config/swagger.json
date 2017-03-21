@@ -38,6 +38,7 @@
 				],
 				"responses": {
 					"200": {
+						"description": "Normal Response",
 						"schema": {
 							"type": "object",
 							"required": ["success"],
@@ -109,6 +110,7 @@
 				],
 				"responses": {
 					"200": {
+						"description": "Normal Response",
 						"schema": {
 							"type": "object",
 							"required": ["success"],
@@ -151,6 +153,73 @@
 				"deprecated": false
 			}
 		},
+		"/IoTEvents/{deviceId}/{fromTimestamp}/{toTimestamp}": {
+			"get": {
+				"description": "Retrieve device's events within specified from and to time range",
+				"tags": [
+					"Events"
+				],
+				"operationId": "getIoTEventsByTime",
+				"consumes": [],
+				"produces": [
+					"application/json",
+					"text/json"
+				],
+				"parameters": [
+					{
+						"name": "deviceId",
+						"in": "path",
+						"description": "Id of the Device for retrieving the Events",
+						"required": true,
+						"type": "string"
+					},
+					{
+						"name": "fromTimestamp",
+						"in": "path",
+						"description": "The min date (in millisecond) of events to be retrieved",
+						"required": true,
+						"type": "number",
+						"format": "int64"
+					},
+					{
+						"name": "toTimestamp",
+						"in": "path",
+						"description": "The max date (in millisecond) of events to be retrieved",
+						"required": true,
+						"type": "number",
+						"format": "int64"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Normal Response",
+						"schema": {
+							"type": "object",
+							"required": ["success"],
+							"properties": {
+								"success": {
+									"type": "boolean"
+								},
+								"errMessage": {
+									"type": "string"
+								},
+								"statusCode": {
+									"type": "number",
+									"format": "int32"
+								},
+								"data": {
+									"type": "array",
+									"items": {
+										"$ref": "#/definitions/GPSEvent"
+									}
+								}
+							}
+						}
+					}
+				},
+				"deprecated": false
+			}
+		},
 		"/IoTDevices": {
 			"post": {
 				"description": "Register the device to IoTHub and record custom meta data in DocumentDB",
@@ -178,6 +247,7 @@
 				],
 				"responses": {
 					"200": {
+						"description": "Normal Response",
 						"schema": {
 							"type": "object",
 							"required": ["success"],
@@ -207,7 +277,7 @@
 				"tags": [
 					"Devices"
 				],
-				"operationId": "registerIoTDevice",
+				"operationId": "updateIoTDevice",
 				"consumes": [
 					"application/json",
 					"text/json"
@@ -228,6 +298,7 @@
 				],
 				"responses": {
 					"200": {
+						"description": "Normal Response",
 						"schema": {
 							"type": "object",
 							"required": ["success"],
@@ -285,6 +356,7 @@
 				],
 				"responses": {
 					"200": {
+						"description": "Normal Response",
 						"schema": {
 							"type": "object",
 							"required": ["success"],
@@ -344,6 +416,7 @@
 				],
 				"responses": {
 					"200": {
+						"description": "Normal Response",
 						"schema": {
 							"type": "object",
 							"required": ["success"],
@@ -395,6 +468,7 @@
 				],
 				"responses": {
 					"200": {
+						"description": "Normal Response",
 						"schema": {
 							"type": "object",
 							"required": ["success"],
@@ -447,6 +521,7 @@
 				],
 				"responses": {
 					"200": {
+						"description": "Normal Response",
 						"schema": {
 							"type": "object",
 							"required": ["success"],
@@ -490,12 +565,14 @@
 					{
 						"name": "geoId",
 						"in": "path",
-						"description": "Id or Ids separated by &lt;comma&gt; for retrieving geo fence definitions",
+						"required": true,
+						"description": "Id or Ids separated by comma for retrieving geo fence definitions",
 						"type": "string"
 					}
 				],
 				"responses": {
 					"200": {
+						"description": "Normal Response",
 						"schema": {
 							"type": "object",
 							"required": ["success"],
@@ -715,29 +792,6 @@
 				}
 			}
 		},
-		"IoTEventSearchCondition": {
-			"type": "array",
-			"items": {
-				"type": "object",
-				"required": ["key", "value"],
-				"properties": {
-					"key": {
-						"type": "string",
-						"description": "Name of the Event Field"
-					},
-					"operator": {
-						"type": "string",
-						"description": "Operator to comparing the field value, =, >=, <=, >, <",
-						"enum": ["=", ">", "<", ">=", "<"],
-						"default": "="
-					},
-					"value": {
-						"type": "string",
-						"description": "Value of the Event Field"
-					}
-				}
-			}
-		},
 		"IoTDeviceCreation": {
 			"type": "object",
 			"required": ["activationCode"],
@@ -864,7 +918,7 @@
 					"type": "string"
 				},
 				"timeStamp": {
-					"format": "int32",
+					"format": "int64",
 					"type": "number"
 				},
 				"timezone": {
@@ -961,7 +1015,7 @@
 					"type": "string"
 				},
 				"timeStamp": {
-					"format": "int32",
+					"format": "int64",
 					"type": "number"
 				},
 				"timezone": {
