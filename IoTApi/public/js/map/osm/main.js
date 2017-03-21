@@ -2,6 +2,12 @@ new Vue({
 	el: '#body'
 	, data: {
 		shapes: []
+		, osm: location.href.indexOf('osm') > -1
+		, colorConfig: {
+			border: '#000000'
+			, fill: '#00ff00'
+			, fill_highlighted: '#ff0000'
+		}
 	}
 	, created: function(done) {
 		var self = this;
@@ -9,10 +15,6 @@ new Vue({
 		L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
 			attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
 		}).addTo(map);
-
-		// L.marker([51.5, -0.09]).addTo(map)
-		// 	.bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
-		// 	.openPopup();
 
 		if (!self.geoFenceTableInitialized) {
 			$('#geoFenceTable').bootstrapTable({
@@ -30,12 +32,13 @@ new Vue({
 					{field: 'geoName', title: 'Geo Fence Name', valign: 'middle', sortable: true, formatter: function(value) { return '<a href="#" class="pointer geoName">' + value + '</a>'; }, events: {
 						'click .geoName': function(event, value, row, index) {
 							self.clearSelection();
-							_.filter(self.shapes, { geoId: row.geoId })[0].shapeRef.setOptions({ fillColor: '#ff0000', zIndex: 99 });
+							self.$set('zoomGeoId', row.geoId);
+							self.$get('map').panTo(row.geoType == 'circle'? [row.coords.coordinates[1], row.coords.coordinates[0]]: [row.coords.coordinates[0][1], row.coords.coordinates[0][0]]);
 						}
 					}}
 					, {field: 'geoType', title: 'Type', valign: 'middle', sortable: true }
 					, {field: 'coords', title: 'Geo Location', valign: 'middle', sortable: false, searchable: false, formatter: function(value, row) {
-						return JSON.stringify(value.coordinates) + (row.geoType === google.maps.drawing.OverlayType.CIRCLE? ', radius: ' + row.radiusInMetre + ' M': '');
+						return JSON.stringify(value.coordinates) + (row.geoType === 'circle'? ', radius: ' + row.radiusInMetre + ' M': '');
 					}}
 					, {field: 'createdAt', title: 'Created At', align: 'center', valign: 'middle', sortable: true, searchable: false, formatter: function(value) { return moment(value).format('YYYY-MM-DD HH:mm'); }}
 					, {
@@ -57,9 +60,55 @@ new Vue({
 		}
 		$('#geoFenceTable').bootstrapTable('load', []);
 
+		var editableLayers = new L.FeatureGroup();
+		map.addLayer(editableLayers);
+
+		var drawControl = new L.Control.Draw({
+			position: 'topright'
+			, draw: {
+				polygon: {
+					allowIntersection: true
+					, shapeOptions: {
+						color: self.colorConfig.border
+						, fillColor: self.colorConfig.fill
+						, fillOpacity: 0.5
+						, weight: 2
+					}
+				}
+				, circle: {
+					shapeOptions: {
+						color: self.colorConfig.border
+						, fillColor: self.colorConfig.fill
+						, fillOpacity: 0.5
+						, weight: 2
+					}
+					, showRadius: true
+					, metric: true
+					, feet: false
+					, nautic: false
+				}
+				, polyline: false
+				, marker: false
+				, rectangle: false
+			}
+			, edit: {
+				featureGroup: editableLayers
+				, remove: false
+				, edit: false
+			}
+		});
+		map.addControl(drawControl);
+
+		map.on(L.Draw.Event.CREATED, function (evt) {
+			self.addShape(evt.layerType, evt.layer);
+		});
+
 		map.on('moveend', function() {
 			self.loadGeoFenceInBound();
 		});
+
+		L.control.scale({ position: 'bottomright' }).addTo(map);
+		map.addControl(GeoSearch.GeoSearchControl({ provider: new GeoSearch.OpenStreetMapProvider(), style: 'bar' }));
 		self.$set('map', map);
 		self.loadGeoFenceInBound();
 	}
@@ -69,61 +118,24 @@ new Vue({
 			$.httpHelper.sendDelete('/geo/' + row.geoId, function(responseData, status) {
 				$.dialog.info('Geo Fence is deleted');
 				var shape = _.filter(self.shapes, { geoId: row.geoId })[0];
-				shape.markerRef.setMap(null);
 				self.removeShape(row.geoType, shape.shapeRef);
 			});
 		}
 		, removeShape: function(shapeType, shapeObject) {
 			var self = this;
-			shapeObject.setMap(null);
+			shapeObject.remove();
 			_.remove(self.shapes, { geoId: shapeObject.geoId });
 			$('#geoFenceTable').bootstrapTable('removeByUniqueId', shapeObject.geoId);
 		}
-		, addShapeListenerAndTableRow: function(data, shapeObject) {
-			var self = this;
-			shapeObject.geoId = data.geoId;
-			shapeObject.setMap(self.$get('map'));
-			var marker = self.createShapeMarker(data, shapeObject);
-			marker.setMap(self.$get('map'));
-			// shapeObject.addListener('click', function(clickEvt) {
-			// 	self.removeShape(data.geoType, shapeObject);
-			// });
-			self.shapes.push(
-				{
-					geoId: data.geoId
-					, geoName: data.geoName
-					, geoType: data.geoType
-					, coords: data.coords.coordinates
-					, shapeRef: shapeObject
-					, markerRef: marker
-					, radiusInMetre: data.radiusInMetre
-					, createdAt: data.createdAt
-				}
-			);
-		}
-		, createShapeMarker: function(data, shapeObject) {
-			var icon = {
-				url: 'https://maps.gstatic.com/mapfiles/place_api/icons/geocode-71.png',
-				// size: new google.maps.Size(71, 71),
-				// anchor: new google.maps.Point(17, 34),
-				scaledSize: new google.maps.Size(25, 25)
-			};
-			var coordinate = (data.geoType === google.maps.drawing.OverlayType.CIRCLE? data.coords.coordinates: data.coords.coordinates[0][0]);
-			return new google.maps.Marker({
-				icon: icon,
-				title: data.geoName,
-				position: new google.maps.LatLng(coordinate[1], coordinate[0])
-			});
-		}
 		, addShape: function(shapeType, shapeObject) {
 			var self = this;
-			shapeObject.setMap(null);
 
 			$.dialog.input('Input Geo-Fencing Name:', function(geoName) {
 				if (_.trim(geoName)) {
 					var shapeSpec = self.getShapeSpec(_.trim(geoName), shapeType, shapeObject);
 					$.httpHelper.sendPost('/geo', shapeSpec, function(responseData, status) {
-						self.addShapeListenerAndTableRow(responseData.data[0], shapeObject);
+						shapeObject.addTo(self.$get('map')).bindPopup(responseData.data[0].geoName);
+						self.$get('shapes').push({ shapeRef: shapeObject, geoId: responseData.data[0].geoId });
 						$('#geoFenceTable').bootstrapTable('append', responseData.data[0]);
 						$('#geoFenceTable').bootstrapTable('showRow', { uniqueId: responseData.data[0].geoId });
 					});
@@ -131,18 +143,6 @@ new Vue({
 					self.addShape(shapeType, shapeObject);
 				}
 			});
-		}
-		, clearSelection: function() {
-			var self = this;
-			_.forEach(
-				self.shapes
-				, function(shape) {
-					shape.shapeRef.setOptions({
-						fillColor: '#0fff00'
-						, zIndex: 0
-					});
-				}
-			);
 		}
 		// Return coordinates in form of [[lng, lat]]
 		/*
@@ -161,22 +161,29 @@ new Vue({
 				geoName: geoName
 				, geoType: shapeType
 				, coords: {
-					type: (shapeType === google.maps.drawing.OverlayType.CIRCLE? 'Point': 'Polygon')
+					type: (shapeType === 'circle'? 'Point': 'Polygon')
 				}
 			};
-			if (shapeType === google.maps.drawing.OverlayType.CIRCLE) {
+			if (shapeType === 'circle') {
 				shapeSpec.radiusInMetre = _.round(shapeObject.getRadius(), 2);
-				shapeSpec.coords.coordinates = [shapeObject.getCenter().lng(), shapeObject.getCenter().lat()];
+				shapeSpec.coords.coordinates = [shapeObject.getLatLng().lng, shapeObject.getLatLng().lat];
 			} else {
 				// Polygon
 				shapeSpec.coords.coordinates = [];
-				_.forEach(shapeObject.getPaths().getArray(), function(path) {
-					_.forEach(path.getArray(), function(point) {
-						shapeSpec.coords.coordinates.push([point.lng(), point.lat()]);
-					});
+				_.forEach(shapeObject.getLatLngs()[0], function(point) {
+					shapeSpec.coords.coordinates.push([point.lng, point.lat]);
 				});
 			}
 			return shapeSpec;
+		}
+		, clearSelection: function() {
+			var self = this;
+			_.forEach(
+				self.shapes
+				, function(shape) {
+					shape.shapeRef.setStyle({ fillColor: self.colorConfig.fill });
+				}
+			);
 		}
 		, loadGeoFenceInBound: function() {
 			var self = this;
@@ -184,49 +191,51 @@ new Vue({
 			if (self.$get('gfXhr')) {
 				self.$get('gfXhr').abort();
 			}
-			var latLngBounds = self.$get('map').getBounds();
+			var latLngBounds = self.$get('map').wrapLatLngBounds(self.$get('map').getBounds());
 			var boundArea = [
 				[latLngBounds.getWest(), latLngBounds.getNorth()]
 				, [latLngBounds.getWest(), latLngBounds.getSouth()]
 				, [latLngBounds.getEast(), latLngBounds.getSouth()]
 				, [latLngBounds.getEast(), latLngBounds.getNorth()]
 			];
-			// _.forEach(self.shapes, function(shape) { shape.shapeRef.setMap(null); });
-			// self.$set('shapes', []);
 			var xhr = $.httpHelper.sendPost(
 				'/geo/search/bound'
 				, boundArea
 				, function(responseData, status) {
-					console.log(responseData);
-					// _.forEach(self.shapes, function(shape) { shape.shapeRef.setMap(null); });
-					// self.$set('shapes', []);
-					// _.forEach(responseData.data, function(data) {
-					// 	var shapeObject;
-					// 	if (data.geoType === google.maps.drawing.OverlayType.CIRCLE) {
-					// 		shapeObject = new google.maps.Circle({
-					// 			center: new google.maps.LatLng(data.coords.coordinates[1], data.coords.coordinates[0])
-					// 			, radius: data.radiusInMetre
-					// 			, fillColor: '#0fff00'
-					// 			, fillOpacity: 0.5
-					// 			, strokeWeight: 2
-					// 			, clickable: true
-					// 			, editable: false
-					// 			, zIndex: 1
-					// 		});
-					// 	} else {
-					// 		shapeObject = new google.maps.Polygon({
-					// 			paths: _.map(data.coords.coordinates[0], function(lngLat) { return { lng: lngLat[0], lat: lngLat[1] }; })
-					// 			, fillColor: '#0fff00'
-					// 			, fillOpacity: 0.5
-					// 			, strokeWeight: 2
-					// 			, clickable: true
-					// 			, editable: false
-					// 			, zIndex: 1
-					// 		});
-					// 	}
-					// 	self.addShapeListenerAndTableRow(data, shapeObject);
-					// });
-					// $('#geoFenceTable').bootstrapTable('load', responseData.data);
+					_.forEach(self.shapes, function(shape) { shape.shapeRef.remove(); });
+					self.$set('shapes', []);
+					_.forEach(responseData.data, function(data) {
+						var shapeObject;
+						if (data.geoType === 'circle') {
+							shapeObject = L.circle([data.coords.coordinates[1], data.coords.coordinates[0]], data.radiusInMetre, {
+								color: self.colorConfig.border
+								, fillColor: self.colorConfig.fill
+								, fillOpacity: 0.5
+								, weight: 2
+							});
+						} else {
+							shapeObject = L.polygon(
+								_.map(data.coords.coordinates, function(lngLat) { return [lngLat[1], lngLat[0]]; })
+								, {
+									color: self.colorConfig.border
+									, fillColor: self.colorConfig.fill
+									, fillOpacity: 0.5
+									, weight: 2
+								}
+							);
+						}
+						shapeObject.addTo(self.$get('map')).bindPopup(data.geoName);
+						self.$get('shapes').push({ shapeRef: shapeObject, geoId: data.geoId });
+					});
+					$('#geoFenceTable').bootstrapTable('load', responseData.data);
+					if (self.$get('zoomGeoId')) {
+						var shapeRef = _.filter(self.shapes, { geoId: self.$get('zoomGeoId') })[0].shapeRef;
+						shapeRef.openPopup();
+						shapeRef.setStyle({ fillColor: self.colorConfig.fill_highlighted });
+						self.$delete('zoomGeoId');
+					}
+					$('.leaflet-control-geosearch .results').html('');
+					$('.leaflet-control-geosearch .results').toggleClass('active', false);
 				}
 			);
 			self.$set('gfXhr', xhr);

@@ -3,16 +3,22 @@ function initMap() {
 		el: '#body'
 		, data: {
 			shapes: []
+			, osm: location.href.indexOf('osm') > -1
+			, colorConfig: {
+				border: '#000000'
+				, fill: '#00ff00'
+				, fill_highlighted: '#ff0000'
+			}
 		}
 		, created: function(done) {
 			var self = this;
 			var map = new google.maps.Map(document.getElementById('map'), {
-				center: {lat: -34.397, lng: 150.644}
+				center: { lat: -34.397, lng: 150.644 }
 				, zoom: 8
-				//, minZoom: 8
+				, scaleControl: true
 			});
 			var drawingManager = new google.maps.drawing.DrawingManager({
-				drawingMode: google.maps.drawing.OverlayType.POLYGON
+				drawingMode: null
 				, drawingControl: true
 				, drawingControlOptions: {
 					position: google.maps.ControlPosition.TOP_CENTER
@@ -20,7 +26,7 @@ function initMap() {
 				}
 				, markerOptions: {icon: 'https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png'}
 				, circleOptions: {
-					fillColor: '#0fff00'
+					fillColor: self.colorConfig.fill
 					, fillOpacity: 0.5
 					, strokeWeight: 2
 					, clickable: false
@@ -28,7 +34,7 @@ function initMap() {
 					, zIndex: 1
 				}
 				, polygonOptions: {
-					fillColor: '#0fff00'
+					fillColor: self.colorConfig.fill
 					, fillOpacity: 0.5
 					, strokeWeight: 2
 					, clickable: false
@@ -60,8 +66,12 @@ function initMap() {
 					, columns: [
 						{field: 'geoName', title: 'Geo Fence Name', valign: 'middle', sortable: true, formatter: function(value) { return '<a href="#" class="pointer geoName">' + value + '</a>'; }, events: {
 							'click .geoName': function(event, value, row, index) {
-								self.clearSelection();
-								_.filter(self.shapes, { geoId: row.geoId })[0].shapeRef.setOptions({ fillColor: '#ff0000', zIndex: 99 });
+								//self.clearSelection();
+								self.$set('zoomGeoId', row.geoId);
+								self.$get('map').panTo(row.geoType == google.maps.drawing.OverlayType.CIRCLE
+														? { lat: row.coords.coordinates[1], lng: row.coords.coordinates[0] }
+														: { lat: row.coords.coordinates[0][1], lng: row.coords.coordinates[0][0] });
+								//_.filter(self.shapes, { geoId: row.geoId })[0].shapeRef.setOptions({ fillColor: self.colorConfig.fill_highlighted, zIndex: 99 });
 							}
 						}}
 						, {field: 'geoType', title: 'Type', valign: 'middle', sortable: true }
@@ -90,17 +100,10 @@ function initMap() {
 
 			// Create the search box and link it to the UI element.
 			var input = $('#tfAddress')[0];
-			var searchBox = new google.maps.places.SearchBox(input);
-			//map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
 
-			// Bias the SearchBox results towards current map's viewport.
-			// map.addListener('bounds_changed', function() {
-				// console.log('bound event');
-				// searchBox.setBounds(map.getBounds());
-				// self.loadGeoFenceInBound();
-			// });
-			// Use idle to reduce bounds_change event on geo fence query
-			// Need further enhancement on reducing ajax call
+			var infoWindow = new google.maps.InfoWindow({});
+			var searchBox = new google.maps.places.SearchBox(input);
+
 			map.addListener('idle', function() {
 				searchBox.setBounds(map.getBounds());
 				self.loadGeoFenceInBound();
@@ -153,6 +156,8 @@ function initMap() {
 				});
 				map.fitBounds(bounds);
 			});
+
+			self.$set('infoWindow', infoWindow);
 		}
 		, methods: {
 			deleteGeoFence: function(event, value, row, index) {
@@ -170,41 +175,23 @@ function initMap() {
 				_.remove(self.shapes, { geoId: shapeObject.geoId });
 				$('#geoFenceTable').bootstrapTable('removeByUniqueId', shapeObject.geoId);
 			}
-			, addShapeListenerAndTableRow: function(data, shapeObject) {
+			, showGeoInfoWindow: function(data) {
+				var self = this;
+				var infoWindow = self.$get('infoWindow');
+				infoWindow.setOptions({
+					content: data.geoName
+					, position: (data.geoType === google.maps.drawing.OverlayType.POLYGON
+								? { lat: data.coords.coordinates[0][1], lng: data.coords.coordinates[0][0] }
+								: { lat: data.coords.coordinates[1], lng: data.coords.coordinates[0] })
+				});
+				infoWindow.open(self.$get('map'));
+			}
+			, addShapeListener: function(data, shapeObject) {
 				var self = this;
 				shapeObject.geoId = data.geoId;
 				shapeObject.setMap(self.$get('map'));
-				var marker = self.createShapeMarker(data, shapeObject);
-				marker.setMap(self.$get('map'));
-				// shapeObject.addListener('click', function(clickEvt) {
-				// 	self.removeShape(data.geoType, shapeObject);
-				// });
-				self.shapes.push(
-					{
-						geoId: data.geoId
-						, geoName: data.geoName
-						, geoType: data.geoType
-						, coords: data.coords.coordinates
-						, shapeRef: shapeObject
-						, markerRef: marker
-						, radiusInMetre: data.radiusInMetre
-						, createdAt: data.createdAt
-					}
-				);
-			}
-			, createShapeMarker: function(data, shapeObject) {
-				var icon = {
-					url: 'https://maps.gstatic.com/mapfiles/place_api/icons/geocode-71.png',
-					// size: new google.maps.Size(71, 71),
-					// anchor: new google.maps.Point(17, 34),
-					scaledSize: new google.maps.Size(25, 25)
-				};
-				var coordinate = (data.geoType === google.maps.drawing.OverlayType.CIRCLE? data.coords.coordinates: data.coords.coordinates[0][0]);
-				return new google.maps.Marker({
-					icon: icon,
-					title: data.geoName,
-					position: new google.maps.LatLng(coordinate[1], coordinate[0])
-				});
+				shapeObject.addListener('click', function() { self.showGeoInfoWindow(data); });
+				self.shapes.push({ geoId: data.geoId, shapeRef: shapeObject });
 			}
 			, addShape: function(shapeType, shapeObject) {
 				var self = this;
@@ -214,7 +201,7 @@ function initMap() {
 					if (_.trim(geoName)) {
 						var shapeSpec = self.getShapeSpec(_.trim(geoName), shapeType, shapeObject);
 						$.httpHelper.sendPost('/geo', shapeSpec, function(responseData, status) {
-							self.addShapeListenerAndTableRow(responseData.data[0], shapeObject);
+							self.addShapeListener(responseData.data[0], shapeObject);
 							$('#geoFenceTable').bootstrapTable('append', responseData.data[0]);
 							$('#geoFenceTable').bootstrapTable('showRow', { uniqueId: responseData.data[0].geoId });
 						});
@@ -229,7 +216,7 @@ function initMap() {
 					self.shapes
 					, function(shape) {
 						shape.shapeRef.setOptions({
-							fillColor: '#0fff00'
+							fillColor: self.colorConfig.fill
 							, zIndex: 0
 						});
 					}
@@ -282,12 +269,11 @@ function initMap() {
 					, [latLngBounds.east, latLngBounds.south]
 					, [latLngBounds.east, latLngBounds.north]
 				];
-				// _.forEach(self.shapes, function(shape) { shape.shapeRef.setMap(null); });
-				// self.$set('shapes', []);
 				var xhr = $.httpHelper.sendPost(
 					'/geo/search/bound'
 					, boundArea
 					, function(responseData, status) {
+						self.$get('infoWindow').close();
 						_.forEach(self.shapes, function(shape) { shape.shapeRef.setMap(null); });
 						self.$set('shapes', []);
 						_.forEach(responseData.data, function(data) {
@@ -296,7 +282,7 @@ function initMap() {
 								shapeObject = new google.maps.Circle({
 									center: new google.maps.LatLng(data.coords.coordinates[1], data.coords.coordinates[0])
 									, radius: data.radiusInMetre
-									, fillColor: '#0fff00'
+									, fillColor: self.colorConfig.fill
 									, fillOpacity: 0.5
 									, strokeWeight: 2
 									, clickable: true
@@ -306,7 +292,7 @@ function initMap() {
 							} else {
 								shapeObject = new google.maps.Polygon({
 									paths: _.map(data.coords.coordinates, function(lngLat) { return { lng: lngLat[0], lat: lngLat[1] }; })
-									, fillColor: '#0fff00'
+									, fillColor: self.colorConfig.fill
 									, fillOpacity: 0.5
 									, strokeWeight: 2
 									, clickable: true
@@ -314,8 +300,14 @@ function initMap() {
 									, zIndex: 1
 								});
 							}
-							self.addShapeListenerAndTableRow(data, shapeObject);
+							self.addShapeListener(data, shapeObject);
 						});
+						if (self.$get('zoomGeoId')) {
+							var shapeRef = _.filter(self.shapes, { geoId: self.$get('zoomGeoId') })[0].shapeRef;
+							shapeRef.setOptions({ fillColor: self.colorConfig.fill_highlighted });
+							self.showGeoInfoWindow(_.filter(responseData.data, { geoId: self.$get('zoomGeoId') })[0]);
+							self.$delete('zoomGeoId');
+						}
 						$('#geoFenceTable').bootstrapTable('load', responseData.data);
 					}
 				);

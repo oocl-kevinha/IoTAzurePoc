@@ -18,18 +18,27 @@
 		<script src="https://maps.googleapis.com/maps/api/js?key=<%= mapKey %>&libraries=drawing,places&callback=initMap" async defer></script>
 		<script src="/js/dist/google/main-component.min.js"></script>
 		<% } else { %>
-		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
-		<script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
+		<link rel="stylesheet" href="/bower/leaflet/dist/leaflet.css" />
+		<link rel="stylesheet" href="/bower/leaflet-draw/dist/leaflet.draw.css" />
+		<link rel="stylesheet" href="/css/lib/leaflet-geosearch.css" />
+		<script src="/bower/leaflet/dist/leaflet.js"></script>
+		<script src="/bower/leaflet-draw/dist/leaflet.draw.js"></script>
+		<script src="/js/lib/leaflet-geosearch.min.js"></script>
 		<script src="/js/dist/osm/main-component.min.js" defer></script>
 		<% } %>
 	</head>
-	<body>
+	<body id="body">
 		<div id="map" class="col-md-6"></div>
 		<div class="col-md-6" style="height: 100%; overflow: auto;">
+			<div class="text-center">
+				<a href="/dashboard" v-if="osm">Switch to Google Map</a>
+				<a href="/dashboard?osm=true" v-else>Switch to Open Street Map</a>
+			</div>
 			<table id="geoFenceTable"></table>
 			<div id="geoFenceTableToolbar" class="form-inline">
-				<input id="tfAddress" class="form-control" type="text" placeholder="Search Address in Map" />
-				<!--<button type="button" class="btn btn-default" v-on:click="clearSelection()">Clear Selection</button>-->
+				<% if (isGoogleMap) { %>
+				<input id="tfAddress" class="form-control" type="text" placeholder="Enter address" />
+				<% } %>
 			</div>
 		</div>
 		<%- include ./common/dialogs.ejs %>
