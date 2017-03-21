@@ -9,7 +9,6 @@ module.exports = {
 };
 
 function getIoTEventsByTime(req, res) {
-	console.log(JSON.stringify(req.params, false, null));
 	var querySpec = {
 		query: `SELECT * FROM ${config.collection.events} r WHERE r.IoTHub.ConnectionDeviceId = @deviceId AND r.hAccuracy <= ${config.tolerence.H_ACCURACY}`
 				+ ' AND r.hAccuracy > -1 AND r.timeStamp >= @fromTimestamp AND r.timeStamp <= @toTimestamp ORDER BY r.timeStamp DESC'

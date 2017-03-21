@@ -165,7 +165,6 @@ function initMap() {
 				$.httpHelper.sendDelete('/geo/' + row.geoId, function(responseData, status) {
 					$.dialog.info('Geo Fence is deleted');
 					var shape = _.filter(self.shapes, { geoId: row.geoId })[0];
-					shape.markerRef.setMap(null);
 					self.removeShape(row.geoType, shape.shapeRef);
 				});
 			}
