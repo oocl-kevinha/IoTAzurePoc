@@ -25,7 +25,7 @@ exports.setGeoFenceList = function(list, isAppend) {
 			, geoType: list.geoType
 			, coordinates: list.geoType == 'polygon'
 				? _.map(list.coords.coordinates[0], function(point) {
-					return {latitude: point[1], longitude: point[0]}
+					return {latitude: point[1], longitude: point[0]};
 				})
 				: { latitude: list.coords.coordinates[1], longitude: list.coords.coordinates[0] }
 			, radius: list.radiusInMetre
@@ -93,7 +93,6 @@ exports.handleGeoEvent = function(message) {
 					// async.concatSeries(
 					async.map(
 						geoEvents
-						// , 2
 						, function(gpsSignal, eachCallback) {
 							if (gpsSignal.hAccuracy > config.tolerence.H_ACCURACY || gpsSignal.hAccuracy < 0 || (devices[0].lastGPSTimestamp && moment(gpsSignal.timeStamp).diff(devices[0].lastGPSTimestamp) <= 0)) {
 								return eachCallback(undefined);

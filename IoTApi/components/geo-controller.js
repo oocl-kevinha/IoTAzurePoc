@@ -7,31 +7,6 @@ var geoEventController = require('./geo-event-controller');
 var responseFactory = require('../util/response-factory');
 var shapeUtil = require('../util/shape-util');
 
-// exports.getGeoFenceInBound = function(req, res) {
-// 	convertPolygonToClockwise({ coords: { coordinates: req.body } });
-//
-// 	var coordStr = JSON.stringify({ type: 'Polygon', coordinates: [req.body] }, false, null);
-// 	var result = [];
-// 	// Document DB Client not support binding Object parameter
-// 	var queryCircle = `SELECT g.geoId, g.geoName, g.geoType, g.coords, g.radiusInMetre, g.createdAt FROM ${config.collection.geoFences} g WHERE ST_INTERSECTS(`
-// 				+ coordStr
-// 				+ ', g.coords) AND g.isDeleted != \'T\' ORDER BY g.geoName';
-// 	var queryPolygon = `SELECT g.geoId, g.geoName, g.geoType, g.coords, g.radiusInMetre, g.createdAt FROM ${config.collection.geoFences} g JOIN cc in g.coords.coordinates[0] WHERE ST_WITHIN({type: 'Point', coordinates: cc}, `
-// 				+ coordStr
-// 				+ ') AND g.isDeleted != \'T\' ORDER BY g.geoName';
-// 	common.queryCollection(config.collection.geoFences, queryCircle)
-// 		.then((circleResult) => {
-// 			result = circleResult;
-// 			return common.queryCollection(config.collection.geoFences, queryPolygon);
-// 		}).then((polygonResult) => {
-// 			res.json(responseFactory.buildSuccessResponse(_.uniqBy(_.concat(result, polygonResult), 'geoId')));
-// 		})
-// 		.catch((err) => {
-// 			console.error(err);
-// 			res.status(500).json(responseFactory.buildFailureResponse(error));
-// 		});
-// };
-
 exports.deleteGeoFence = function(req, res) {
 	var querySpec = {
 		query: `SELECT TOP 1 * FROM ${config.collection.geoFences} d WHERE d.geoId = @geoId`
@@ -112,7 +87,43 @@ exports.createGeoFenceLocations = function(req, res) {
 	);
 };
 
+exports.getGeoFenceByCode = function(req, res) {
+	var geoCodes = req.params.geoCode.split(',');
+	var parameters = _.map(geoCodes, function(geoCode, idx) {
+		return { name: '@geo' + idx, value: _.trim(geoCode) };
+	});
+
+	var whereCondition = _.join(_.map(parameters, function(geoCode) {
+		return 'g.geoCode = ' + geoCode.name;
+	}), ' OR ');
+
+	var querySpec = {
+		query: `SELECT * FROM ${config.collection.geoFences} g` + (whereCondition? ' WHERE ' + whereCondition: '')
+		, parameters: parameters
+	};
+
+	common.queryCollection(config.collection.geoFences, querySpec, false)
+		.then((results) => {
+			res.json(responseFactory.buildSuccessResponse(results));
+		})
+		.catch((error) => {
+			console.error(error);
+			res.status(500).json(responseFactory.buildFailureResponse(error));
+		});
+};
+
 // TODO Validation
-function validateShape() {
-	return true;
+function validateShape(shape) {
+	//return true;
+
+	if (!_.has(shape, 'coords.coordinates') || !_.isArray(shape.coords.coordinates)) {
+		return false;
+	}
+
+	if (shape.geoType === 'circle') {
+		return _.isNumber(shape.radiusInMetre) && (shape.coords.coordinates.length == 2) && _.isNumber(shape.coords.coordinates[0]) && _.isNumber(shape.coords.coordinates[1]);
+	}
+	return (shape.coords.coordinates.length > 0) && _.every(shape.coords.coordinates, function(lngLat) {
+		return (lngLat.length == 2) && _.isNumber(lngLat[0]) && _.isNumber(lngLat[1]);
+	});
 }
